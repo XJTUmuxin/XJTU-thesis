@@ -1,0 +1,53 @@
+\xchapter{相关理论与技术}{Related Theory and Technology}
+本章将详细介绍本文所使涉及到的相关理论和技术。其中包括超宽带脉冲雷达感知技术，?
+\xsection{脉冲超宽带雷达感知技术}{Impulse Radio Ultra-Wideband (IR-UWB) Radar Sensing Technology}
+超宽带(Ultra-Wideband,UWB)射频是指工作频率带宽超过500MHz的射频信号，由于超宽带射频大多是通过发射极短的无线电脉冲来实现如此高的工作频率带宽，因此也被称为脉冲超宽带(Impulse Radio Ultra-Wideband,IR-UWB)。该射频信号的核心特点在于极宽的频谱带宽和极低的功率谱密度，得益于这两点，超宽带信号可以在短时间内传输大量信息，而不会干扰同一频段的传统窄带和载波传输，因此，超宽带射频已经被广泛地应用于无线通信领域。超宽带射频能够穿透障碍物并且捕获到环境中细微的变化，同时具有极高的时间分辨率，能够实现对目标物体的精确距离测量和运动检测，这些特点让超宽带射频在感知领域也得到应用。与Wi-Fi和RFID等有限带宽的射频模式相比，超宽带射频的超高带宽带来了细粒度的测距分辨率，因此具有精度更高的感知能力；与毫米波和激光这种高频的射频模式相比，超宽带射频具有更小的传播损耗和更强的穿透能力，因此在非视线(Non-Line-of-Sight,NLOS)场景下有着更鲁棒的感知能力；换言之，超宽带射频感知在感知精度和感知鲁棒性上取得了良好的平衡。目前市面上已经有不少基于超宽带射频的商用脉冲超宽带雷达，本文使用的脉冲超宽带雷达为XeThru的X4雷达，该款雷达具有单根发射天线和单根接收天线，中心频率为7.29GHz，带宽为1.4GHz，有不少工作使用该雷达去完成了不同的下游感知任务，例如生命体征监测\cite{zheng2021more, chen2021movi}，空中手写识别\cite{9253617}，人类活动识别\cite{noori2021ultra}，音频振动提取和分离\cite{wang2020uwhear}等。本小节后续将详细介绍脉冲超宽带雷达的感知原理以及雷达接收信号的数据结构。
+\xsubsection{脉冲超宽带雷达感知原理}{Impulse Radio Ultra-Wideband (IR-UWB) Radar Sensing Theory}
+脉冲超宽带雷达的基带等效表示如图？所示，雷达发射被调制在频率为$f_c$的余弦载波上的高斯脉冲$g(t)$，脉冲信号会以间隔$T_s$周期性地发射，发射信号的数学表示如下：
+\begin{equation}
+    x(t) = g(t-kT_s)\cos(2\pi f_c(t-kTs))
+\end{equation}
+高斯脉冲信号$g(t)$可以表示为：
+\begin{equation}
+    g(t) = V_{tx} exp(-2{\pi}^2{f_B}^2{log}_{10} (e)t^2)
+\end{equation}
+其中，$f_B$表示-10dB带宽，$V_{tx}$是高斯脉冲的最大幅值。雷达发射的信号被环境中的物体反射并由接收天线接收，通常，发射天线和接收天线会被雷达集成到同一位置上。由于感知范围内存在着不同的反射物体，因此信道响应$h(t)$可以表示为具有不同时延和衰减的$P$条路径的总和：
+\begin{equation}
+    h(t) = \sum_{p=1}^{P}\alpha_p \delta(t-T_p)
+\end{equation}
+其中$T_p$是由反射路径距离决定的往返飞行时间，$\delta(t)$表示单位冲激函数，那么接收天线接收到的信号$y(t)$就可以被建模成发射信号与信道脉冲响应的卷积再加上噪声$n(t)$，即：
+\begin{equation}
+    \begin{aligned}
+        y(t) &= x(t) * h(t) + n(t) = \sum_{p=1}^P \alpha_p g(t - kT_s - T_p) \times \cos\left(2\pi f_c (t - kT_s - T_p)\right) + n(t)
+    \end{aligned}
+\end{equation}
+在接收侧，会对接收信号$y(t)$进行下变频操作，具体操作为将$y(t)$在混频器中与载波余弦及正弦信号相乘，再通过低通滤波器(Low-Pass Filter, LPF)，分别得到I路信号(In-phase Signal)和Q路信号（(Quadrature Signal)），对于I路信号，将$y(t)$与余弦载波$\cos(2\pi f_c(t-kT_S))$相乘后，仅考虑余弦部分，有：
+\begin{equation}
+    \begin{aligned}
+        m(t) &= \cos(2\pi f_c (t - kT_S - T_p)) \times \cos(2\pi f_c (t - kT_s)) \\
+             &= \frac{1}{2} \left[ \cos \left( 2\pi 2f_c \left( t - kT_s - \frac{T_p}{2} \right) \right) + \cos(2\pi f_c T_p) \right]
+    \end{aligned}
+\end{equation}
+由于$2f_c$频率分量会被低通滤波器滤除，因此只有低频分量$\frac{1}{2}\cos(2\pi f_c T_p)$被留下，因此，在经过下变频和滤波器后的I路信号为:
+\begin{equation}
+    \begin{aligned}
+        y_{in-phase}(t) &= LPF[y(t)\cdot cos(2\pi f_c(t-kT_s))] \\
+                        &= \frac{1}{2}\sum_{p=1}^{P} \alpha_p g(t-kT_s-T_p)\times\cos(2\pi f_c T_p) +n(t)
+    \end{aligned}
+\end{equation}
+同理，我们也可以得到Q路信号：
+\begin{equation}
+    \begin{aligned}
+        y_{quad}(t) &= LPF[y(t)\cdot\sin(2\pi f_c(t-kT_s))] \\
+                    &= \frac{1}{2}\sum_{p=1}^{P} \alpha_p g(t-kT_s-T_p) \times \sin(2\pi f_c T_p) + n(t)
+    \end{aligned}
+\end{equation}
+在数字信号处理领域，I路信号和Q路信号通常一起组成复数信号，那么根据欧拉公式，复数形式的接收信号$y_{comp}(t)$可以做如下推导：
+\begin{equation}
+    \begin{aligned}
+        y_{comp}(t) &= y_{in-phase}(t) + j\cdot y_{quad} \\
+                    &= \frac{1}{2}\sum_{p=1}^{P}\alpha_p g(t-kT_s-T_p)\times[\cos(2\pi f_c T_p)+j\cdot \sin(2\pi f_c T_p)] + n(t) \\
+                    &= \frac{1}{2}\sum_{p=1}^{P}\alpha_p g(t-kT_s-T_p)\cdot e^{j\theta_p} + n(t)
+    \end{aligned}
+\end{equation}
+从复数形式的接收信号上，我们可以很直观地看出，最终的接收信号其实是多个路径的复数反射信号以及噪声的叠加，路径$p$对应的复数反射信号的幅值为$\frac{1}{2}\alpha_pg(g-kT_s-T_p)$，相位$\theta_p$为$2\pi f_c T_p$。
