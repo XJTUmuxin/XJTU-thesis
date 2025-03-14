@@ -18,8 +18,8 @@
 回顾第二章对接收信号的基础建模，可以将接收信号再进一步细化：
 \begin{equation}
     \begin{aligned}
-        y(t) &= \frac{1}{2}\sum_{p\_target=1}^{P\_target}\alpha_{p\_target}g(t-kT_S-T_{p\_target})\cdot e^{j\theta_{p\_target}} \\
-            &+ \frac{1}{2}\sum_{p\_other=1}^{P\_other}\alpha_{p\_other}g(t-kT_S-T_{p\_other})\cdot e^{j\theta_{p\_other}} + y_{crosstalks}(t) + n(t)  \\
+        y(t) &= \sum_{p\_target=1}^{P\_target}A_{p\_target}\cdot e^{j\theta_{p\_target}} \\
+            &+ \sum_{p\_other=1}^{P\_other}A_{p\_other}\cdot e^{j\theta_{p\_other}} + y_{crosstalks}(t) + n(t)  \\
             &= y_{target}(t) + y_{other}(t) + y_{crosstalks}(t) + n(t)
     \end{aligned}
 \end{equation}
@@ -90,6 +90,44 @@
 \end{algorithm}
 
 \xsection{雷达信号数据增强}{Radar Signal Data Augmentation}
+在基于深度学习的三维物体重建任务中，数据质量和数量直接决定了神经网络模型的泛化能力和重建精度。然而，由于本文的超宽带虚拟阵列构建方法使得每组雷达信号的采集都较为繁琐耗时，因此雷达信号数据集面临着数据采集成本高，数据样本单一的问题，数据增强技术作为缓解数据不足、提升模型鲁棒性的核心手段，通过生成多样化的合成数据，能够在有限的原始数据基础上扩展训练集，从而减少过拟合风险并增强模型对复杂场景的适应性。因此，在将提取到的有效雷达信号输入到深度学习神经网络中进行训练前，本文对雷达信号进行数据增强，提升数据集中数据的多样性。
+
+首先分析下有限样本数据集中数据单一性产生的原因。回顾超宽带虚拟阵列构建的方法，通过使物体相对于雷达运动，等效出虚拟天线，物体运动过程中，雷达不断收发信号，接收到的一组信号可以等效为多个虚拟天线接受到的信号，然而在这一过程中，当物体的初始放置位置发生一些微小位移，最终接受到的信号会发生相对明显的变化，在数据集采集过程中，很难对物体的所有可能初始位置进行遍历，这也就造成了数据集中样本的单一，幸运的是，可以通过数据增强的方法从一个原始数据合成出物体初始位置发生位移时对应的其他数据。
+
+由于物体放置平台的高度是固定的，因此物体初始位置只会在放置平台所处平面的两个维度上发生微小位移，即沿物体运动方向和垂直物体运动方向。
+
+当物体初始位置沿物体运动方向发生正负位移时，如图{?}所示，假设每组雷达信号的帧数相同即虚拟天线数相同，那么当物体初始位置发生正向位移时，相当于在负方向删除掉数个虚拟天线，而在正方向补上数个新的虚拟天线，因此接收到的信号相对于初始信号，在头部会有数个帧的落后，而在末尾会补上数个帧；当物体初始位置负向位移时，相当于在负方向添加数个新的虚拟天线，而在正方向删掉数个虚拟天线，因此接收信号相对于初始信号，在头部会有数个新帧，而在末尾会少数个帧。因此，可以使用沿帧方向对雷达信号矩阵进行随机裁剪的方式对初始雷达信号进行数据增强，具体的，在采集信号时，稍微增加物体的运动长度，增加每次雷达信号对应的帧长度，本文中设置为2880帧，在数据增强时，设定裁剪后帧的长度，本文设置为2800帧，对初始数据随机选取起始帧进行裁剪，并确保帧长度满足指定长度。
+
+当物体初始位置沿垂直物体运动方向发生位移时，如图{?}所示，由于物体到每个虚拟天线的径向距离都发生变化，因此每个虚拟天线采集到的复数信号均发生改变，情况相对更复杂。首先理论分析当物体初始位置沿垂直物体运动方向偏移时，各虚拟天线接收信号的变化，回忆对接收信号的数学建模:
+\begin{equation}
+    y(t) = \sum_{p=1}^{P} A_{p}\cdot e^{j\theta_{p}} + n(t)
+\end{equation}
+接收信号是多个反射路径的反射信号的叠加，对于复数信号矩阵，选定某一个固定虚拟天线$ant$和距离箱$bin$，仅考虑路径$p$的反射信号$y_p(ant,bin)$，那么对应的幅值$A_p(ant,bin) = \frac{1}{2}\alpha_p g(t_{bin}-T_p)$，相位$\theta_p(ant,bin) = 2\pi f_c T_p$，其中，$\alpha_p$为该反射路径的固有反射系数，$t_{bin}$为该距离箱对应的快时间采样时间，$T_p$为该路径的信号往返时延，根据文献\cite{korany2019xmodal}中对信号的建模，这些反射路径可以等效为物体表面的一些理想反射点，如果物体初始位置沿垂直物体运动方向发生微小位移，那么相当于所有理想反射点到雷达的径向距离都发生改变，相应的，信号在该路径上的往返时延也发生了变化，即$T_p^{\prime} = T_p + \Delta T$，考虑该变化对信号幅值和相位的分别影响，假设物体发生$1cm$位移，对应的$\Delta T$则为$0.067ns$，对于信号幅值，$\alpha_p$项是理想反射点的固有反射系数，几乎不受位移影响，$g(t_{bin}-T_p)$受$\Delta T$影响，但$g(t)$对应的高斯脉冲的脉冲宽度约为$2ns$，远大于$\Delta T$的值，因此，$\Delta T$对$g(t_{bin}-T_p)$函数值的影响也可以忽略不计，于是有:
+\begin{equation}
+    \begin{aligned}
+        A_p^{\prime}(ant,bin) &= \frac{1}{2}\alpha_p g(t_{bin}-(T_p + \Delta T)) \\
+                              &\approx \frac{1}{2}\alpha_p g(t_{bin}-T_p) \\
+                              &= A_p(ant,bin)
+    \end{aligned}
+\end{equation}
+即物体的微小位移几乎不改变信号幅值；对于信号相位:
+\begin{equation}
+    \begin{aligned}
+        \Delta \theta_{p}(ant,bin) &= \theta_{p}^{\prime}(ant,bin) - \theta_{p}(ant,bin) \\
+                                   &= 2\pi f_c (T_p+\Delta T) - 2\pi f_c T_p  \\
+                                   &= 2\pi f_c \Delta T
+    \end{aligned}
+\end{equation}
+当位移为$1cm$时，带入$f_c = 7.29GHz$，可以得到$\Delta \theta_{p}(ant,bin) = 3.07$，这对于相位来说是一个极大的改变。考虑多个路径信号叠加后的信号，忽略噪声项：
+\begin{equation}
+    \begin{aligned}
+        y^{\prime}(ant,bin) &= \sum_{p=1}^{P} A_p^{\prime}(ant,bin) \cdot e^{j\theta_{p}^{\prime}(ant,bin)} \\
+                    &\approx  \sum_{p=1}^{P} A_p(ant,bin) \cdot e^{j\left(\theta_{p}(ant,bin)+ \Delta \theta_{p}(ant,bin) \right)} \\
+                    &= e^{j\Delta \theta_{p}(ant,bin)}\cdot \sum_{p=1}^{P} A_p(ant,bin) \cdot e^{j\theta_{p}(ant,bin)} \\
+                    &= e^{j\Delta \theta_{p}(ant,bin)}\cdot y(ant,bin)
+    \end{aligned}
+\end{equation}
+结论为，当物体初始位置在垂直物体运动方向发生微小位移后，某个固定虚拟天线的接收信号会受到一个相位偏转，偏转的相位与位移成正比。接下来需要考虑，对于多个虚拟天线，该相位偏转是否保持一致。
 
 \xsection{神经网络模型}{Neural Network Model}
 为了能够从多视角下采集的雷达信号中提取出物体的三维结构信息，重建出物体点云，本文提出了一种神经网络模型。该网络模型是一个经典的编码器-解码器架构网络模型，模型整体框架如图\ref{fig:model1}所示。
