@@ -7,10 +7,29 @@
 \xsection{基于物理模拟的雷达信号生成}{Physics-based Radar Signal Generation}
 本小节探究如何通过物理模拟的方法根据物体三维模型生成对应的初步仿真雷达信号。一些三维重建领域公开的数据集中包含了大量的物体三维模型，例如ShapeNet数据集\cite{chang2015shapenet}，它是一个大规模、多类别的三维模型数据库，其中给出了每个三维模型高精度的多种三维表示，例如点云、三维网格等，本文通过物理建模的方式模拟超宽带信号经过三维模型反射后到达雷达接收端的接收信号，进而为大量三维模型生成对应的仿真雷达信号。
 \xsubsection{三维物体反射信号物理建模}{?}
-在章节\ref{sec:UWB_sense}中已经对雷达接收信号进行了详细的数学建模，具体见公式\ref{equ:y_complex}，然而在该建模中，最终的接收信号被简单表示成多个路径反射信号的叠加，但并没有对每条路径的物理意义进行进一步讨论，如果要对三维物体的反射信号进行精确建模，必须考虑物体可能产生的每条反射路径。根据文献\cite{korany2019xmodal}中对人体反射WiFi信号的建模方式，人体的整体反射信号可以被看做是人体三维网格(Mesh)的每个三角形面(Face)的反射信号的叠加，这种建模方式细化了人体作为反射物时产生的反射路径的粒度，本文参考该文献中的建模方式，对三维物体的超宽带反射信号进行了物理模拟，如图{?}所示。首先将反射路径细化为三维网格的每个三角形面，对雷达接收信号进行重写：
+在章节\ref{sec:UWB_sense}中已经对雷达接收信号进行了详细的数学建模，具体见公式\ref{equ:y_complex}，然而在该建模中，最终的接收信号被简单表示成多个路径反射信号的叠加，但并没有对每条路径的物理意义进行进一步讨论，如果要对三维物体的反射信号进行精确建模，必须考虑物体可能产生的每条反射路径。根据文献\cite{korany2019xmodal,xue2023towards}中对人体反射WiFi信号的建模方式，人体的整体反射信号可以被看做是人体三维网格(Mesh)的每个三角形面(Face)的反射信号的叠加，这种建模方式细化了人体作为反射物时产生的反射路径的粒度，本文参考该文献中的建模方式，对三维物体的超宽带反射信号进行了物理模拟，如图{?}所示。首先将反射路径细化为三维网格的每个三角形面，对雷达接收信号进行重写：
 \begin{equation}
         y(t) = \sum_{f=1}^{F}A_{f}\cdot e^{j\theta_f} + n(t)
 \end{equation}
 其中三角形面$f$对应的反射信号幅值为$A_{f} = \frac{1}{2}\alpha_fg(t-kT_s-T_f)$，相位为$\theta_f$为$2\pi f_c T_f$。
 
-在之前的讨论中，认为$\alpha_p$是反射路径$p$的固有反射强度系数，这里，$\alpha_f$也可以认为是三角形面$f$的固有反射强度系数，为了准确估计每个三角形面的反射信号幅值，需要对$\alpha_f$进行进一步的详细数学建模。对于每个三角形面的反射信号强度，会受到三个因素的影响：即
+在之前的讨论中，认为$\alpha_p$是反射路径$p$的固有反射强度系数，这里，$\alpha_f$也可以认为是三角形面$f$的固有反射强度系数，为了准确估计每个三角形面的反射信号幅值，需要对$\alpha_f$进行进一步的详细数学建模。对于每个三角形面的反射信号强度，会受到三个因素的影响：即三角形面与发射天线和接收天线的角度关系、三角形面与收发天线的距离关系以及三角形面的面积大小。
+
+首先考虑三角形面与收发天线角度对反射强度的影响。当三角形面和收发天线的位置关系如图{?}所示时，将发射天线和接收天线的位置坐标分别表示为$l_t \in \mathbb{R}^3$和$l_r \in \mathbb{R}^3$， 该三角形面的三个顶点的坐标分别表示为$v_a\in \mathbb{R}^3$，$v_b\in \mathbb{R}^3$和$v_c\in\mathbb{R}^3$，那么该三角形面的中点坐标可以表示为$l_f = \frac{v_a + v_b + v_c}{3},l_f\in\mathbb{R}^3$，三角形面的单位法线向量可以通过向量$\overrightarrow{v_a v_b}$和$\overrightarrow{v_a v_c}$的叉乘计算得来，即$\mathbf{n_f} =  \overrightarrow{v_a v_b}\times \overrightarrow{v_a v_c}$，信号的入射向量可以近似为发射天线指向三角形面中点的向量$\mathbf{I} = \frac{l_f - l_t}{\| l_f - l_t \| }$，如果三角形面是完美的镜面反射器(Specular Reflector)时，那么理想的出射向量为：
+\begin{equation}
+    \begin{aligned}
+        \mathbf{R} &= \mathbf{I} - 2(\mathbf{I}\cdot \mathbf{n_f})\mathbf{n_f} \\
+                   &= \frac{l_f - l_t}{\| l_f - l_t \|} - 2\frac{(l_f - l_t)\cdot \mathbf{n_f}}{\|l_f - l_t \|}\mathbf{n_f}
+    \end{aligned}
+\end{equation}
+由于入射向量$\mathbf{R}$和法向量$\mathbf{n_f}$都是单位向量，计算出的理想出射向量$\mathbf{R}$也为单位向量，即$\|\mathbf{R}\| = 1$。然而在现实生活中，由于绝大多数物体都有着不同程度的粗糙表面，因此，每个三角形面并不适合被建模为镜面反射器，参考文献\cite{korany2019xmodal}，本文将每个三角形面定义为准镜面反射器(Quasispecular Reflector)，这是一种介于镜面反射器和漫反射器(Diffuse Reflector)之间的一种反射器，这种反射器的反射信号在理想出射向量方向上强度最高，同时在其他方向上也会有一定的反射强度，某个出射方向上的反射强度与最强反射强度的比例可以表示为:
+\begin{equation}
+    c_{\theta} = e^{-\frac{\theta^2}{2\sigma^2}}
+\end{equation}
+其中，$\sigma$是一个经验值，而$\theta$则为该出射方向和理想出射方向之间的夹角，即该出射方向向量与$\mathbf{R}$之间的夹角，假如我们只考虑从三角形面到接收天线这个出射方向，则对应的出射向量为$\overrightarrow{l_f l_r} = l_r - l_f$，那么对应的$\theta$可以通过计算得到:
+\begin{equation}
+    \begin{aligned}
+        \theta &= \arccos\left(\frac{\overrightarrow{l_f l_r}\cdot \mathbf{R}}{\|\overrightarrow{l_f l_r}\|\|\mathbf{R}\|}\right) \\
+              &= \arccos\left(\frac{(l_r-l_f)\cdot\mathbf{R}}{\|l_r -l_f\|} \right) \\
+    \end{aligned}
+\end{equation}
