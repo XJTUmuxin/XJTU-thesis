@@ -4,7 +4,7 @@
 
 针对上述问题，本章介绍本文的第二个贡献点，即提出了一种基于物理模拟与深度学习的雷达信号仿真方法，该方法能针对公开数据集中大量已有的物体三维模型生成对应的仿真雷达信号数据，同时这些公开数据集中的物体三维模型容易去渲染生成多视角深度图，将仿真雷达信号数据与对应的多视角深度图标注组成一个数据量庞大的仿真数据集。之后采用迁移学习中的“预训练(Pre-training)-微调(Fine-tuning)”两阶段学习范式：首先将网络模型在仿真数据集上进行充分的预训练，得到从仿真数据集中学习到通用知识的预训练模型(Pre-trained Model)，之后使用预训练模型的模型参数在真实数据集上进行简单微调即可完成模型的迁移。在预训练模型上进行微调相比于从头训练的优势在于：（1）数据效率高，预训练模型已经从大规模数据中学习到了通用知识（雷达信号的特征，以及从特征到物体三维结构的映射关系），因此，只需要使用少量的真实数据在预训练模型上微调就能取得良好的性能表现。（2）训练成本低，相比于随机初始化的参数，预训练模型的参数已经接近于最优解，这大大减少了模型需要搜索的参数空间范围，因此只需要少量迭代即可让模型在真实数据集上收敛。（3）模型性能更好，由于对预训练模型高质量特征表示的直接继承，以及更稳定的训练优化过程，微调后的模型相比于从头训练的模型具有更好的性能表现。（4）更便捷的跨域迁移能力，得益于使用预训练模型在真实数据集上微调时极高的数据效率和极低的训练成本，使得模型可以快速迁移到其他场景下的数据域上。
 
-\xsection{基于物理模拟的雷达信号生成}{Physics-based Radar Signal Generation}
+\xsection{基于物理模拟的雷达信号仿真}{?}
 本小节探究如何通过物理模拟的方法根据物体三维模型生成对应的初步仿真雷达信号。一些三维重建领域公开的数据集中包含了大量的物体三维模型，例如ShapeNet数据集\cite{chang2015shapenet}，它是一个大规模、多类别的三维模型数据库，其中给出了每个三维模型高精度的多种三维表示，例如点云、三维网格等，本文通过物理建模的方式模拟超宽带信号经过三维模型反射后到达雷达接收端的接收信号，进而为大量三维模型生成对应的仿真雷达信号。
 \xsubsection{三维物体反射信号物理建模}{?}
 在章节\ref{sec:UWB_sense}中已经对雷达接收信号进行了详细的数学建模，具体见公式\ref{equ:y_complex}，然而在该建模中，最终的接收信号被简单表示成多个路径反射信号的叠加，但并没有对每条路径的物理意义进行进一步讨论，如果要对三维物体的反射信号进行精确建模，必须考虑物体可能产生的每条反射路径。根据文献\cite{korany2019xmodal,xue2023towards}中对人体反射WiFi信号的建模方式，人体的整体反射信号可以被看做是人体三维网格(Mesh)的每个三角形面(Face)的反射信号的叠加，这种建模方式细化了人体作为反射物时产生的反射路径的粒度，本文参考该文献中的建模方式，对三维物体的超宽带反射信号进行了物理模拟，如图{?}所示。首先将反射路径细化为三维网格的每个三角形面，对雷达接收信号进行重写：
@@ -15,21 +15,130 @@
 
 在之前的讨论中，认为$\alpha_p$是反射路径$p$的固有反射强度系数，这里，$\alpha_f$也可以认为是三角形面$f$的固有反射强度系数，为了准确估计每个三角形面的反射信号幅值，需要对$\alpha_f$进行进一步的详细数学建模。对于每个三角形面的反射信号强度，会受到三个因素的影响：即三角形面与发射天线和接收天线的角度关系、三角形面与收发天线的距离关系以及三角形面的面积大小。
 
-首先考虑三角形面与收发天线角度对反射强度的影响。当三角形面和收发天线的位置关系如图{?}所示时，将发射天线和接收天线的位置坐标分别表示为$l_t \in \mathbb{R}^3$和$l_r \in \mathbb{R}^3$， 该三角形面的三个顶点的坐标分别表示为$v_a\in \mathbb{R}^3$，$v_b\in \mathbb{R}^3$和$v_c\in\mathbb{R}^3$，那么该三角形面的中点坐标可以表示为$l_f = \frac{v_a + v_b + v_c}{3},l_f\in\mathbb{R}^3$，三角形面的单位法线向量可以通过向量$\overrightarrow{v_a v_b}$和$\overrightarrow{v_a v_c}$的叉乘计算得来，即$\mathbf{n_f} =  \overrightarrow{v_a v_b}\times \overrightarrow{v_a v_c}$，信号的入射向量可以近似为发射天线指向三角形面中点的向量$\mathbf{I} = \frac{l_f - l_t}{\| l_f - l_t \| }$，如果三角形面是完美的镜面反射器(Specular Reflector)时，那么理想的出射向量为：
+首先考虑三角形面与收发天线角度对反射强度的影响。当三角形面和收发天线的位置关系如图{?}所示时，将发射天线和接收天线的位置坐标分别表示为$l_t \in \mathbb{R}^3$和$l_r \in \mathbb{R}^3$， 该三角形面的三个顶点的坐标分别表示为$v_a\in \mathbb{R}^3$，$v_b\in \mathbb{R}^3$和$v_c\in\mathbb{R}^3$，那么该三角形面的中点坐标可以表示为$l_f = \frac{v_a + v_b + v_c}{3},l_f\in\mathbb{R}^3$，三角形面的单位法线向量可以通过向量$\overrightarrow{v_a v_b}$和$\overrightarrow{v_a v_c}$的叉乘计算得来，即:
+\begin{equation}
+\mathbf{n_f} = \frac{\overrightarrow{v_a v_b}\times \overrightarrow{v_a v_c}}{\|\overrightarrow{v_a v_b}\times \overrightarrow{v_a v_c}\|}
+\end{equation}
+信号的入射向量可以近似为发射天线指向三角形面中点的向量$\mathbf{I} = \frac{\overrightarrow{l_t l_f}}{\| \overrightarrow{l_t l_f} \| }$，如果三角形面是完美的镜面反射器(Specular Reflector)时，那么理想的出射向量为：
 \begin{equation}
     \begin{aligned}
         \mathbf{R} &= \mathbf{I} - 2(\mathbf{I}\cdot \mathbf{n_f})\mathbf{n_f} \\
-                   &= \frac{l_f - l_t}{\| l_f - l_t \|} - 2\frac{(l_f - l_t)\cdot \mathbf{n_f}}{\|l_f - l_t \|}\mathbf{n_f}
+                   &= \frac{\overrightarrow{l_t l_f}}{\| \overrightarrow{l_t l_f} \|} - 2\frac{(\overrightarrow{l_t l_f})\cdot \mathbf{n_f}}{\|\overrightarrow{l_t l_f} \|}\mathbf{n_f}
     \end{aligned}
 \end{equation}
-由于入射向量$\mathbf{R}$和法向量$\mathbf{n_f}$都是单位向量，计算出的理想出射向量$\mathbf{R}$也为单位向量，即$\|\mathbf{R}\| = 1$。然而在现实生活中，由于绝大多数物体都有着不同程度的粗糙表面，因此，每个三角形面并不适合被建模为镜面反射器，参考文献\cite{korany2019xmodal}，本文将每个三角形面定义为准镜面反射器(Quasispecular Reflector)，这是一种介于镜面反射器和漫反射器(Diffuse Reflector)之间的一种反射器，这种反射器的反射信号在理想出射向量方向上强度最高，同时在其他方向上也会有一定的反射强度，某个出射方向上的反射强度与最强反射强度的比例可以表示为:
-\begin{equation}
-    c_{\theta} = e^{-\frac{\theta^2}{2\sigma^2}}
-\end{equation}
-其中，$\sigma$是一个经验值，而$\theta$则为该出射方向和理想出射方向之间的夹角，即该出射方向向量与$\mathbf{R}$之间的夹角，假如我们只考虑从三角形面到接收天线这个出射方向，则对应的出射向量为$\overrightarrow{l_f l_r} = l_r - l_f$，那么对应的$\theta$可以通过计算得到:
+由于入射向量$\mathbf{R}$和法向量$\mathbf{n_f}$都是单位向量，计算出的理想出射向量$\mathbf{R}$也为单位向量，即$\|\mathbf{R}\| = 1$。然而在现实生活中，由于绝大多数物体都有着不同程度的粗糙表面，因此，每个三角形面并不适合被建模为镜面反射器，参考文献\cite{korany2019xmodal}，本文将每个三角形面定义为准镜面反射器(Quasispecular Reflector)，这是一种介于镜面反射器和漫反射器(Diffuse Reflector)之间的一种反射器，这种反射器的反射信号在理想出射向量方向上强度最高，同时在其他方向上也会有一定的反射强度，假如我们只考虑从三角形面到接收天线这个出射方向，则对应的出射向量为$\overrightarrow{l_f l_r} = l_r - l_f$，该出射向量和理想出射向量之间的夹角$\gamma$可以通过计算得到:
 \begin{equation}
     \begin{aligned}
-        \theta &= \arccos\left(\frac{\overrightarrow{l_f l_r}\cdot \mathbf{R}}{\|\overrightarrow{l_f l_r}\|\|\mathbf{R}\|}\right) \\
-              &= \arccos\left(\frac{(l_r-l_f)\cdot\mathbf{R}}{\|l_r -l_f\|} \right) \\
+        \gamma &= \arccos\left(\frac{\overrightarrow{l_f l_r}\cdot \mathbf{R}}{\|\overrightarrow{l_f l_r}\|\cdot\|\mathbf{R}\|}\right) \\
     \end{aligned}
 \end{equation}
+该出射方向上的反射强度$c_{f}$是一个与$\gamma$相关的变量:
+\begin{equation}
+    c_{f} = e^{-\frac{\gamma^2}{2\sigma^2}}
+\end{equation}
+其中，$\sigma$是一个经验值。$c_{f}$可以当做是三角形面$f$的角度相关的反射强度系数。 之后，考虑三角形面与收发天线的距离对反射强度的影响，参考文献\cite{xue2023towards}，每个三角形面的反射强度应该与面到发射天线和面到接收天线的距离成反比，那么三角形面的距离相关的反射强度系数$d_{f}$为：
+\begin{equation}
+d_{f} = \frac{1}{\|\overrightarrow{l_f l_t} \|\cdot\|\overrightarrow{l_f l_r}\|}
+\end{equation}
+最后考虑三角形面的面积大小对反射强度的影响，直观地，每个三角形面的反射强度应该与该三角形面的面积成正比，根据三角形面的面积计算公式，可以计算出三角形面$f$的与面积相关的反射强度系数$a_{f}$:
+\begin{equation}
+    \begin{aligned}
+        a_{f} &= \frac{1}{2} \|\overrightarrow{v_a v_b}\times \overrightarrow{v_a v_c}\|
+    \end{aligned}
+\end{equation}
+那么，最终，三角形面$f$的固有反射强度系数$\alpha_f$可以表示为三个反射强度系数的乘积：
+\begin{equation}
+    \begin{aligned}
+        \alpha_f &= c_f \cdot d_f \cdot a_f \\
+                 &= \frac{e^{-\frac{\gamma^2}{2\sigma^2}}\cdot \|\overrightarrow{v_a v_b}\times \overrightarrow{v_a v_c}\|}{2\|\overrightarrow{l_f l_t} \|\cdot\|\overrightarrow{l_f l_r}\|} 
+    \end{aligned}
+\end{equation}
+三角形面$f$对应的反射信号的相位$\theta_f$为$2\pi f_cT_f$，此时，$T_f$可以通过$f$到发射天线距离和$f$到接收天线距离的和除以光速计算出，即$T_f = \frac{\|\overrightarrow{l_f l_t}\|+\|\overrightarrow{l_f l_r}\|}{c}$，则信号相位为：
+\begin{equation}
+    \begin{aligned}
+        \theta_f &= 2\pi fc T_f \\
+                 &= \frac{2\pi f_c\left(\|\overrightarrow{l_f l_t}\|+\|\overrightarrow{l_f l_r}\|\right)}{c}
+    \end{aligned}
+\end{equation}
+则最终，整个物体的反射信号可以被建模为：
+\begin{equation}
+    \begin{aligned}
+        y(t) &= \sum_{f=1}^{F}A_{f}\cdot e^{j\theta_f} + n(t)\\
+        &= \sum_{f=1}^{F}\frac{1}{2}\alpha_f g(t-kT_s-T_f)\cdot e^{j2\pi f_cT_f} +n(t)\\
+        &= \sum_{f=1}^{F} \frac{e^{-\frac{\gamma^2}{2\sigma^2}}\cdot \|\overrightarrow{v_a v_b}\times \overrightarrow{v_a v_c}\| \cdot g\left(t-kT_s-\frac{\|\overrightarrow{l_f l_t}\|+\|\overrightarrow{l_f l_r}\|}{c} \right)} {4\|\overrightarrow{l_f l_t} \|\cdot\|\overrightarrow{l_f l_r }\|}  \cdot e^{j\frac{2\pi f_c\left(\|\overrightarrow{l_f l_t}\|+\|\overrightarrow{l_f l_r}\|\right)}{c}} + n(t)
+    \end{aligned}
+\end{equation}
+根据上式，当物体三维网格位置以及雷达发射天线和接收天线位置已知时，可以计算出每个三角形面对应的理论反射信号，并最终通过叠加每个三角形面的信号计算出整个物体的理论反射信号。
+\xsubsection{物体三维网格细分以及背面去除}{?}
+在上一小节中，通过将物体的整体反射信号拆分成三维网格中每个小三角形面的反射信号的叠加，并对每个面的反射信号进行了详细的数学建模，最终计算出物体整体的反射信号。通过这种建模方式计算出的物体反射信号的精确程度很大程度上依赖于物体三维网格的细化程度，当三维网格中每个三角形面的面积足够小时，计算出的理论反射信号也更逼近于真实反射信号，因此，考虑在对物体反射信号仿真之前，先对物体三维网格进行细分(Subdivision)。
+
+在ShapeNet\cite{chang2015shapenet}等公开数据集中，并不对物体三维网格中三角形面的精细程度做保证，尤其是当一些物体存在较平整的大面积区域时，这些平整区域可能仅由数个大的三角形面表示，如图{?}所示，这种粗略表示会影响物理模拟仿真信号的准确程度，本文设计了一种基于面积阈值的三维网格细分算法\ref{?}，该算法能对三维网格中较大面积的面进行细分，确保最终的三维网格中所有三角形面都保持一个较高的精细程度。算法中首先为三角形面积设置一个阈值$A_{thresh}$，计算三维网格中每个三角形面积并挑选出面积大于阈值的面，对选中面执行细分操作，本文使用的细分方法为简单的线性细分，即通过连接原始三角形各边的中点，生成新的四个小三角形；通过不断迭代上述操作直到三维网格中所有面的面积都小于阈值。在真实应用时，考虑到不同物体的尺寸存在差异，为所有物体设置一个固定的面积阈值并不合理，因此考虑将面积阈值设置为固定阈值和动态阈值(三维网格面积和的1/n)的较小值，即$A_{thresh} = \min(0.02^2,\frac{\sum A}{n})$，确保所有三维物体都有一个相对精细的面积阈值。通过上述算法细分后的三维网格如图{?}所示。
+\begin{algorithm}[H]
+\caption{三维网格细分算法}
+\label{alg:adaptive_subdivision}
+\begin{algorithmic}[1]
+\Require
+\State 初始三维网格$\mathcal{M}$， 包含点集 $V= \{v\}$ 和 面集 $F=\{f\}$
+\State 面积阈值 $A_{\text{thresh}}$
+\Ensure 细化后三维网格 $\mathcal{M}'$
+\Function{ComputeFaceAreas}{$V, F$}
+    \For{$f_m \in F$}
+        \State $(i,j,k) \gets f_m$ \Comment{三角形顶点}
+        \State $v_i \gets V[i],\ v_j \gets V[j],\ v_k \gets V[k]$
+        \State  $\vec{e_1} \gets v_j - v_i, \vec{e_2} \gets v_k - v_i$
+        \State  $a \gets 0.5 \times \|\vec{e_1} \times \vec{e_2}\|$ 
+        \State $A[m] \gets a$
+    \EndFor
+    \State \Return $A$
+\EndFunction
+\Function{Subdivision}{$\mathcal{M},\ A_{\text{thresh}}$}
+\State $A \gets \text{ComputeFaceAreas}(V,F)$
+\State $mask \gets [a > A_{\text{thresh}}\ \forall a \in A]$ \Comment{初始化细分掩码}
+
+\While{$\exists m \in mask\ \text{where}\ m = 1$} \Comment{细分至所有三角形面面积小于阈值}\label{line:while_loop} 
+\State $\mathcal{M}' \gets \text{Subdivide}(\mathcal{M},\ mask)$ \Comment{执行细分操作}\label{line:subdivide}
+\State $A_{\text{new}} \gets \text{ComputeFaceAreas}(V',F')$ \Comment{计算三角形面面积} \label{line:compute_areas}
+\State $mask \gets [a > A_{\text{thresh}}\ \forall a \in A_{\text{new}}]$ \Comment{动态更新掩码} \label{line:update_mask}
+\State $\mathcal{M} \gets \mathcal{M}'$ \label{line:update_mesh}
+\EndWhile
+\State $\mathcal{M}' \gets \mathcal{M}$
+\State \Return $\mathcal{M}'$ 
+\EndFunction
+\end{algorithmic}
+\end{algorithm}
+
+在通过叠加各三角形面的反射信号来得到物体最终的反射信号时，还需要考虑的问题是不同的三角形面之间存在遮挡，那些被其他面遮挡的面不应该产生反射信号，因此在进行反射信号仿真前，需要对被遮挡面进行去除。现存的遮挡面去除算法大多时间复杂度较高，例如光线投射(Ray Casting)法，时间复杂度为$O(m^2)$，$m$为三维网格面的个数，深度缓冲(Z-Buffer)法，时间复杂度为$O(m\times k)$，$k$为每个三角形的平均覆盖像素数，在后续的信号仿真中，由于每个虚拟天线的位置坐标都不一样，与物体的视线关系也会发生改变，因此对每个虚拟天线都需要执行一次遮挡面去除，上述时间复杂度较高的算法会带来巨大的计算成本。考虑到现实中物体大多为简单封闭物体，因此，对三维网格进行背面去除可以取得与遮挡面去除近似的效果，而背面去除算法仅需判断每个三角形面的法向量和视线向量的角度关系，时间复杂度为$O(m)$，因此，本文使用背面去除算法来去除三维网格中被遮挡面，具体见算法\ref{?}。
+\begin{algorithm}[H]
+    \caption{背面去除算法}
+    \label{alg:backface_culling}
+    \begin{algorithmic}[1]
+    \Require 
+    \Statex 初始三维网格 $\mathcal{M}$，包含顶点集 $V = \{v\}$ 和面集 $F = \{f\}$
+    \Statex 发射天线位置 $\mathbf{l}_r \in \mathbb{R}^3$
+    \Ensure
+    \Statex 背面去除后的三维网格 $\mathcal{M}'$
+    
+    \Function{BackFaceCulling}{$\mathcal{M}, \mathbf{l}_r$}
+    \State $F_{\text{visible}} \gets \emptyset$ \Comment{初始化可见面集合}\label{line:init}
+    \For{$f \in F$} \Comment{遍历所有三角形面}
+    \State  $\mathbf{c} \gets \frac{1}{3}(\mathbf{v}_1 + \mathbf{v}_2 + \mathbf{v}_3),\ \text{其中}\ f = \{\mathbf{v}_1, \mathbf{v}_2, \mathbf{v}_3\}$ \Comment{计算面中心点}
+    \State  $\mathbf{V} \gets \mathbf{c} - \mathbf{l}_r$ \Comment{生成视线向量}
+    \State  $\mathbf{n} \gets (\mathbf{v}_2 - \mathbf{v}_1) \times (\mathbf{v}_3 - \mathbf{v}_1)$ \Comment{法向量}
+    \State  $\mathbf{n} \gets \mathbf{n} / \|\mathbf{n}\|$
+    \If{$\mathbf{V} \cdot \mathbf{n}_j > 0$} \label{line:dot_product} 
+    \State $F_{\text{visible}} \gets F_{\text{visible}} \cup \{f\}$ \label{line:add_face}
+    \EndIf
+    \EndFor
+    \State $\mathcal{M}' = (V, F_{\text{visible}})$
+    \State \Return $\mathcal{M}'$ \label{line:return}
+    \EndFunction
+    \end{algorithmic}
+    
+    \medskip
+    \noindent
+    \textbf{几何关系说明}：当视线向量$\mathbf{V}$与法向量$\mathbf{n}$的夹角$\theta$满足：
+    \begin{equation*}
+    \cos\theta = \frac{\mathbf{V} \cdot \mathbf{n}_j}{\|\mathbf{V}\|\|\mathbf{n}_j\|} > 0 \Rightarrow \theta < 90^\circ
+    \end{equation*}
+    时判定为可见面，否则执行背面去除。
+\end{algorithm}

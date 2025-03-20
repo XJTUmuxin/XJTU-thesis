@@ -51,38 +51,36 @@
     \caption{有效距离箱定位算法}
     \label{algo:range_bin}
 \begin{algorithmic}[1]
-    \State \textbf{Input:} 二维复数信号矩阵$\mathbf{S}$（帧数 $\times$ 距离箱数）
-    \State \textbf{Output:} 裁剪后的有效距离箱信号
-    \Function{EffectiveRangeBinLocalization}{$\mathbf{S}$}
-        \State $\mathbf{A} \gets |\mathbf{S}|$ \Comment{计算信号幅度矩阵}
-        \State $N_{fr} \gets \text{dim}_1(\mathbf{S})$ \Comment{总帧数}
-        \State $N_{rb} \gets \text{dim}_2(\mathbf{S})$ \Comment{总距离箱数}
-        \State $W_{sz} \gets 9$ \Comment{滑动窗口尺寸}
+    \Require 二维复数信号矩阵$\mathbf{S}$（帧数 $\times$ 距离箱数）
+    \Ensure 裁剪后的有效距离箱信号$\mathbf{S}'$
+    \State $\mathbf{A} \gets |\mathbf{S}|$ \Comment{计算信号幅度矩阵}
+    \State $N_{fr} \gets \text{dim}_1(\mathbf{S})$ \Comment{总帧数}
+    \State $N_{rb} \gets \text{dim}_2(\mathbf{S})$ \Comment{总距离箱数}
+    \State $W_{sz} \gets 9$ \Comment{滑动窗口尺寸}
+    
+    \State \text{初始化滑动窗口边界}
+    \State $w_l \gets 0$ \Comment{窗口左边界}
+    \State $w_r \gets W_{sz}-1$ \Comment{窗口右边界}
+    
+    \State $\Gamma_{max} \gets \sum\mathbf{A}[:, w_l:w_r+1]$ \Comment{初始窗口能量}
+    \State $\Gamma_{tmp} \gets \Gamma_{max}$ 
+    \State $w_l^{opt} \gets w_l$, $w_r^{opt} \gets w_r$ \Comment{最优窗口边界}
+    
+    \State \text{滑动窗口能量最大化}
+    \While{$w_r < N_{rb}-1$}
+        \State $w_r \gets w_r + 1$ \Comment{窗口右移}
+        \State $\Gamma_{tmp} \gets \Gamma_{tmp} + \sum\mathbf{A}[:, w_r]$ 
+        \State $\Gamma_{tmp} \gets \Gamma_{tmp} - \sum\mathbf{A}[:, w_l]$ 
+        \State $w_l \gets w_l + 1$ 
         
-        \State \text{// 初始化滑动窗口边界}
-        \State $w_l \gets 0$ \Comment{窗口左边界}
-        \State $w_r \gets W_{sz}-1$ \Comment{窗口右边界}
-        
-        \State $\Gamma_{max} \gets \sum\mathbf{A}[:, w_l:w_r+1]$ \Comment{初始窗口能量}
-        \State $\Gamma_{tmp} \gets \Gamma_{max}$ 
-        \State $w_l^{opt} \gets w_l$, $w_r^{opt} \gets w_r$ \Comment{最优窗口边界}
-        
-        \State \text{// 滑动窗口能量最大化}
-        \While{$w_r < N_{rb}-1$}
-            \State $w_r \gets w_r + 1$ \Comment{窗口右移}
-            \State $\Gamma_{tmp} \gets \Gamma_{tmp} + \sum\mathbf{A}[:, w_r]$ 
-            \State $\Gamma_{tmp} \gets \Gamma_{tmp} - \sum\mathbf{A}[:, w_l]$ 
-            \State $w_l \gets w_l + 1$ 
-            
-            \If{$\Gamma_{tmp} > \Gamma_{max}$}
-                \State $\Gamma_{max} \gets \Gamma_{tmp}$
-                \State $w_l^{opt} \gets w_l$
-                \State $w_r^{opt} \gets w_r$
-            \EndIf
-        \EndWhile
-        
-        \State \Return $\mathbf{S}[:, w_l^{opt}:w_r^{opt}+1]$ \Comment{返回裁剪后的有效信号}
-    \EndFunction
+        \If{$\Gamma_{tmp} > \Gamma_{max}$}
+            \State $\Gamma_{max} \gets \Gamma_{tmp}$
+            \State $w_l^{opt} \gets w_l$
+            \State $w_r^{opt} \gets w_r$
+        \EndIf
+    \EndWhile
+    
+    \State $\mathbf{S}'$ \gets $\mathbf{S}[:, w_l^{opt}:w_r^{opt}+1]$
 \end{algorithmic}
 \end{algorithm}
 \xsection{雷达信号数据增强}{Radar Signal Data Augmentation}
@@ -136,17 +134,17 @@
 
 针对上述理论分析，本文通过实验来对理论的合理性进行了验证。本文选择了一个3D打印的显示器作为目标物体，使显示器相对于雷达运动起来，采集了多组雷达信号，在每组实验中，雷达与物体在垂直方向上的距离以0.5cm为步长逐渐改变。多组实验对应的信号矩阵的信号幅值热图如图{?}所示，从图中可以看出，多组实验的信号矩阵幅值非常相似，选择有效距离箱中的一个距离箱，绘制出多组实验中雷达信号对应的幅值和相位，如图{?}所示，从图中可以清晰看出，当雷达和物体的垂直方向距离改变时，各虚拟天线上的信号幅值基本保持一致，而相位发生旋转，同时各虚拟天线上的相位旋转程度基本保持一致，与上文中的理论分析相吻合。
 
-通过上述两种数据增强方法，可以分别合成出物体初始位置在水平方向和垂直方向发生微小位移时对应的雷达信号数据，因此结合两种方法，可以合成出物体在二维平面任意方向上发生位移时对应的雷达信号数据，考虑到物体四个视角下的雷达信号为一组，可以使用算法\ref{algo:augmentation}来对每组信号数据进行数据增强，合成出多组新的信号数据。
+通过上述两种数据增强方法，可以分别合成出物体初始位置在水平方向和垂直方向发生微小位移时对应的雷达信号数据，因此结合两种方法，可以合成出物体在二维平面任意方向上发生位移时对应的雷达信号数据，本文设计一种数据增强的算法，结合了两种数据增强方法，为每组初始数据进行数据增强，见算法\ref{algo:augmentation}。
 \begin{algorithm}[H]
     \caption{数据增强算法}
     \label{algo:augmentation}
     \begin{algorithmic}[1]
-        \State \textbf{Input:} $\mathbf{X} \in \mathbb{C}^{4 \times N \times M}$ \Comment{原始信号（视角×虚拟天线×距离箱）}
-        \State \textbf{Input:} $K_1, K_2 \in \mathbb{N}^+$ \Comment{虚拟天线偏移/相位旋转增强系数}
-        \State \textbf{Input:} $T = 2800$, $\Delta_{\max} = 80$ \Comment{目标虚拟天线数和最大偏移量}
-        \State \textbf{Output:} $\mathbf{\tilde{X}} \in \mathbb{C}^{K\times 4 \times T \times M}$ \Comment{增强后信号，$K=K_1K_2$}
+        \Require
+        \State 初始信号数据$\mathbf{X} \in \mathbb{C}^{4 \times N \times M}$ \Comment{视角×虚拟天线×距离箱}
+        \State  增强系数 $K_1, K_2 \in \mathbb{N}^+$ \Comment{虚拟天线偏移/相位旋转增强系数}
+        \State 最大偏移量$\Delta_{\max} = 80$ 
+        \Ensure 增强后信号数据集合$\mathbf{\tilde{X}} \in \mathbb{C}^{K\times 4 \times T \times M}$ \Comment{$K=K_1K_2$}
         
-        \Function{Augment}{$\mathbf{X}$}
             \State  $\{\mathcal{P}_i\}_{i=1}^4 \gets \emptyset$ \Comment{初始化参数集合}
             
             \For{$i \gets 1$ \textbf{to} $4$} \Comment{四个视角}
@@ -168,11 +166,10 @@
                     \State $\mathbf{\tilde{X}}[k,i] \gets \mathbf{X}''$
                 \EndFor
             \EndFor
-            
-            \State \Return $\mathbf{\tilde{X}}$
-        \EndFunction
     \end{algorithmic}
 \end{algorithm}
+该算法的输入为一组初始信号数据$\mathbf{X} \in \mathbb{C}^{4 \times N \times M}$，该组数据包括了4个视角下的$\text{虚拟天线}\times\text{距离箱}$的复数信号矩阵。通过指定增强系数$K_1$（虚拟天线偏移次数）和$K_2$（相位旋转次数），可以设置增强后的样本数$K=K_1 K_2$。算法中首先对每个视角独立生成$K_1 \times K_2$组增强参数，其中虚拟天线偏移量$\delta$从均匀分布$\mathcal{U}(0, \Delta_{\max})$中采样，相位旋转角度$\theta$从均匀分布$\mathcal{U}(0, 2\pi)$中采样，为了保证4个视角的数据进行组合时样本的随机性，对生成的增强参数顺序进行打乱。之后，根据增强参数对初始数据进行增强操作，即进行帧切片和相位偏转，最终得到增强后的信号数据集合$\mathbf{\tilde{X}} \in \mathbb{C}^{K\times 4 \times T \times M}$，包含了增强后的$K$个数据样本。
+
 
 \xsection{神经网络模型}{Neural Network Model}
 为了能够从多视角下采集的雷达信号中提取出物体的三维结构信息，重建出物体点云，本文提出了一种神经网络模型。该网络模型是一个经典的编码器-解码器架构网络模型，模型整体框架如图\ref{fig:model1}所示。
