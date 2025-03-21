@@ -1,4 +1,5 @@
 \xchapter{基于超宽带虚拟阵列的物体三维点云重建}{3D Object Point Cloud Reconstruction Based on Ultra-Wideband Virtual Array}
+\label{chapter:ch3}
 \xsection{引言}{Introduction}
 物体三维重建一直作为一个重要的研究领域，其目的在于利用各种类型的输入来恢复出物体的三维结构，例如点云、网格和体素等。然而，目前的物体三维重建领域的主流研究方向是基于二维RGB图像的三维重建，该类方法的缺陷在于极其依赖场景的可见性和光照条件，在存在遮挡和光照环境恶劣的情况下，该类方法将不再适用。也有部分研究人员使用射频传感器来进行物体三维重建，这类方法不依赖于环境光照，并且由于射频的穿透能力可以有效地解决遮挡问题，但其中大部分方法依赖于集成了多根发射天线和多根接收天线的复杂且昂贵的射频设备，并且大部分工作聚焦于恢复人体这一较为简单固定的形状模式，对于普适的物体形状并不适用。
 
@@ -140,9 +141,9 @@
     \label{algo:augmentation}
     \begin{algorithmic}[1]
         \Require
-        \State 初始信号数据$\mathbf{X} \in \mathbb{C}^{4 \times N \times M}$ \Comment{视角×虚拟天线×距离箱}
-        \State  增强系数 $K_1, K_2 \in \mathbb{N}^+$ \Comment{虚拟天线偏移/相位旋转增强系数}
-        \State 最大偏移量$\Delta_{\max} = 80$ 
+        \Statex 初始信号数据$\mathbf{X} \in \mathbb{C}^{4 \times N \times M}$ \Comment{视角×虚拟天线×距离箱}
+        \Statex  增强系数 $K_1, K_2 \in \mathbb{N}^+$ \Comment{虚拟天线偏移/相位旋转增强系数}
+        \Statex 最大偏移量$\Delta_{\max} = 80$ 
         \Ensure 增强后信号数据集合$\mathbf{\tilde{X}} \in \mathbb{C}^{K\times 4 \times T \times M}$ \Comment{$K=K_1K_2$}
         
             \State  $\{\mathcal{P}_i\}_{i=1}^4 \gets \emptyset$ \Comment{初始化参数集合}

@@ -79,8 +79,8 @@ d_{f} = \frac{1}{\|\overrightarrow{l_f l_t} \|\cdot\|\overrightarrow{l_f l_r}\|}
 \label{alg:adaptive_subdivision}
 \begin{algorithmic}[1]
 \Require
-\State 初始三维网格$\mathcal{M}$， 包含点集 $V= \{v\}$ 和 面集 $F=\{f\}$
-\State 面积阈值 $A_{\text{thresh}}$
+\Statex 初始三维网格$\mathcal{M}$， 包含点集 $V= \{v\}$ 和 面集 $F=\{f\}$
+\Statex 面积阈值 $A_{\text{thresh}}$
 \Ensure 细化后三维网格 $\mathcal{M}'$
 \Function{ComputeFaceAreas}{$V, F$}
     \For{$f_m \in F$}
@@ -116,8 +116,7 @@ d_{f} = \frac{1}{\|\overrightarrow{l_f l_t} \|\cdot\|\overrightarrow{l_f l_r}\|}
     \Require 
     \Statex 初始三维网格 $\mathcal{M}$，包含顶点集 $V = \{v\}$ 和面集 $F = \{f\}$
     \Statex 发射天线位置 $\mathbf{l}_r \in \mathbb{R}^3$
-    \Ensure
-    \Statex 背面去除后的三维网格 $\mathcal{M}'$
+    \Ensure 背面去除后的三维网格 $\mathcal{M}'$
     
     \Function{BackFaceCulling}{$\mathcal{M}, \mathbf{l}_r$}
     \State $F_{\text{visible}} \gets \emptyset$ \Comment{初始化可见面集合}\label{line:init}
@@ -143,6 +142,51 @@ d_{f} = \frac{1}{\|\overrightarrow{l_f l_t} \|\cdot\|\overrightarrow{l_f l_r}\|}
     \end{equation*}
     时判定为可见面，否则执行背面去除。
 \end{algorithm}
-\xsubsection{多虚拟天线雷达信号仿真}{?}
+\xsubsection{雷达信号仿真}{?}
 在上一小节中，对物体三维网格进行了网格细分以及背面去除，确保了最终的三维网格具有较精细的三角形面，同时仅保留了会产生反射信号的有效面，至此，可以从处理后的三维网格出发，根据章节\ref{sec:reflect_signal}中对反射信号的建模方式，去生成对应的仿真信号。
 
+根据章节\ref{chapter:ch3}中对雷达信号数据的定义，一组信号数据可以表示为$\mathbf{X} \in \mathbb{C}^{4 \times N \times M}$，对应4个视角下的$\text{虚拟天线}\times \text{距离箱}$的复数信号矩阵，因此，通过物理模拟生成的仿真信号数据$\hat{\mathbf{X}}$应该与$X$维度保持一致。针对4个不同视角，可以通过设置不同的雷达坐标位置来模拟不同的雷达视角；不同的虚拟天线对应物体运动时与雷达不同的相对位置，因此可以通过为三维网格顶点坐标添加运动方向的偏移量来模拟物体的运动过程，已知物体运动时的初始位置偏移量$\mathbf{O}_{start}$和结束位置偏移量$\mathbf{O}_{end}$，那么就可以通过均匀采样的方法得到每个虚拟天线对应的物体位置偏移量；对于每个虚拟天线，已知雷达采样快时间间隔$\mathbf{T}$，同样可以通过均匀采样得到每个距离箱对应的快时间采样点，在每个采样点上对雷达信号进行采样，就可以得到一个虚拟天线不同距离箱上的雷达信号；雷达信号的采样过程可以参照章节\ref{sec:reflect_signal}中的建模方式，通过计算每个三角形面的反射信号幅值与相位，并最终将所有面的反射信号叠加得到整体的反射信号。在之前的建模中，雷达的发射天线和接收天线是处于不同位置的，然而，由于实际上雷达的收发天线会被集成到非常接近的位置上，因此仿真的过程中可以近似认为发射天线和接收天线处于同一位置，即$l_t = l_r = l$。完整的雷达信号仿真算法流程如算法\ref{algo:simulate}所示。为了验证仿真算法的正确性，本文将真实信号采集场景中的雷达相对位置及物体运动初始和结束位置偏移量带入到仿真算法中，生成了对应的仿真信号，并与真实信号做对比，图\ref{?}为某个显示器单个视角下真实信号和仿真信号的幅值热图，从图中可以看出，仿真信号和真实信号在各个虚拟天线和距离箱上均有着极高的相似度。
+
+\begin{algorithm}[t]
+\caption{雷达信号仿真算法}
+\label{algo:simulate}
+\begin{algorithmic}[1]
+    \Require
+    \Statex 初始三维网格 $\mathcal{M}$，包含顶点集 $V = \{v\}$ 和面集 $F = \{f\}$
+    \Statex 多视角下雷达位置数组 $\mathbf{L} \in \mathbb{R}^{4\times 3}$
+    \Statex 物体运动初始位置偏移量$\mathbf{O}_{start}\in \mathbb{R}^{4\times 3} $，结束位置偏移量$\mathbf{O}_{end}\in \mathbb{R}^{4\times 3}$
+    \Statex 雷达采样快时间间隔$\mathbf{T}$
+    \Ensure 仿真信号 $\hat{\mathbf{X}} \in \mathbb{C}^{4 \times N \times M}$ \Comment{$\text{视角}\times\text{虚拟天线}\times\text{距离箱}$}
+    \State $\mathcal{M}$ \gets \text{Subdivision}($\mathcal{M},\ A_{\text{thresh}}$) \Comment{三维网格细分}
+    \For{$i \gets 1 \textrm{ to } 4$}
+        \State $\mathbf{l} \gets \mathbf{L}[i]$ \Comment{视角$i$下雷达位置}
+        \State $\Delta \gets (\mathbf{O}_{\text{end}}[i] - \mathbf{O}_{\text{start}}[i])/(N-1)$
+        \State $\mathbf{O} \gets \mathbf{O}_{\text{start}}[i] + [0,1,...,N-1]^T \cdot \Delta^\top,\mathbf{O}\in \mathbb{R}^{N\times 3}$  \Comment{均匀采样得到视角$i$下物体运动中的偏移矩阵}
+        \For{$j \gets 1 \textrm{ to } N$}       \Comment{$N$个虚拟天线}
+            \State $V' \gets V+\mathbf{O}[j]$ \Comment{为每个顶点施加偏移}
+            \State $\mathcal{M}' \gets (V',F)$
+            \State $\mathcal{M}' \gets \text{BackFaceCulling}(\mathcal{M}',\mathbf{l})$    \Comment{背面去除}
+            \State $\mathbf{t} \gets [0,1,...,M-1].T,\mathbf{t}\in\mathbb{R}^{M}$ \Comment{均匀采样得到$M$个距离箱对应的采样点}
+            \For{$k \gets 1 \textrm{ to } M$} \Comment{$M$个距离箱}
+                \State $\mathbf{S}_{sum} \gets 0+0j$
+                \For{$ f\in F$} \Comment{计算每个面的反射信号并叠加}
+                    \State$\{\mathbf{v}_1,\mathbf{v}_2,\mathbf{v}_3\}\gets f$
+                    \State$\mathbf{c} \gets \frac{1}{3}(\mathbf{v}_1+\mathbf{v}_2+\mathbf{v}_3)$ \Comment{计算面中点}
+                    \State $ \mathbf{n} \gets (\mathbf{v}_{2} - \mathbf{v}_{1}) \times (\mathbf{v}_{3} - \mathbf{v}_{1})$           \Comment{法向量}
+                    \State $\mathbf{a} \gets \frac{1}{2}\|\mathbf{n}\|$     \Comment{计算面积}
+                    \State $\mathbf{n} \gets \mathbf{n}/\|\mathbf{n}\|$     
+                    \State $\mathbf{I} \gets \frac{\mathbf{c}-\mathbf{l}}{\|\mathbf{c}-\mathbf{l}\|}$ \Comment{入射向量}
+                    \State $\mathbf{R} \gets \mathbf{I}-2(\mathbf{I}\cdot \mathbf{n})\mathbf{n}$    \Comment{理想出射向量}
+                    \State $\overrightarrow{cl} \gets \frac{\mathbf{l}-\mathbf{c}}{\|\mathbf{l}-\mathbf{c}\|}$ \Comment{实际出射向量}
+                    \State $\gamma \gets \arccos\left(\frac{\overrightarrow{cl}\cdot\mathbf{R}}{\|\overrightarrow{cl}\|\cdot\|\mathbf{R}\|}\right)$   \Comment{与理想出射向量的夹角}
+                    \State $\mathbf{T}_{of} \gets \frac{2\|\mathbf{I}\|}{c}$    \Comment{信号飞行时间}
+                    \State $\mathbf{A} \gets \frac{\mathbf{a}}{{\|\mathbf{I}\|}^2}\cdot e^{-\frac{\gamma^2}{2{\sigma}^2}}\cdot g(\mathbf{t}[k]-\mathbf{T}_{of})$    \Comment{计算信号幅值}
+                    \State $\theta \gets 2\pi f_c \mathbf{T}_{of}$\Comment{计算信号相位}
+                    \State $\mathbf{S}_{sum} \gets \mathbf{S}_{sum}+\mathbf{A}\cdot e^{j\theta}$ \Comment{叠加信号}
+                \EndFor
+                \State $\hat{\mathbf{X}}[i,j,k] \gets \mathbf{S}_{sum}$ 
+            \EndFor
+        \EndFor
+    \EndFor
+\end{algorithmic}
+\end{algorithm}
