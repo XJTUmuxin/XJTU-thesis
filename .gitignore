@@ -25,7 +25,7 @@
 *.zlg
 *.zln
 *.pdf
-
+!/Build/*.pdf
 ## Intermediate documents:
 *.dvi
 *.xdv
@@ -357,3 +357,5 @@ TSWLatexianTemp*
 !.vscode
 .vscode/*
 !.vscode/settings.json
+!/Figures/*.png
+!/Build/*.pdf
