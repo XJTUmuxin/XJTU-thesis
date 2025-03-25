@@ -358,4 +358,5 @@ TSWLatexianTemp*
 .vscode/*
 !.vscode/settings.json
 !/Figures/*.png
+!/Figures/*.pdf
 !/Build/*.pdf
