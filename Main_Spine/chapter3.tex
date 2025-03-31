@@ -216,7 +216,7 @@
 对于二维特征图进行特征提取和上采样，最常见的做法是使用反卷积(Transposed Convolution)操作，反卷积操作的核心思想是通过插入零值并应用卷积操作来放大特征图的尺寸，这种操作被广泛应用于语义分割、图像超分辨率和生成对抗网络等任务中，然而，由于反卷积中的插零操作会导致卷积核在覆盖输入时产生不均匀的重叠模式，进而导致反卷积的输出产生棋盘状伪
 影。与之相对应的另一种做法是通过插值(Interpolation)+卷积的操作来替代反卷积操作，相比于插零操作，使用插值来实现的上采样更加平滑，避免了卷积核覆盖时的不均匀重叠，消除了反卷积产生了期盼伪影现象，之后再使用标准卷积操作对特征图进行进一步特征提取，多个工作\cite{karras2017progressive,lin2018learning}已经证明了该操作的有效性，因此，本文也使用了这种操作来对特征图进行上采样和特征提取。
 
-在解码器模块中，对于$256\times 4 \times 4$的二维特征图，通过五层的双线性插值(Bilinear Interpolation)操作搭配二维卷积操作，将特征图尺寸扩展至$48 \times 128 \times 128$，之后，通过最后一层卷积操作得到$2N \times H \times W$的最终输出，该输出的通道数为2N，N对应的是输出视角个数，前N个通道的输出对应的是N个视角深度图的预测${Depth} \in \mathbb{R}^{N\times H \times W}$，后N个通道的输出则是N个视角下物体所占据像素的掩膜${Mask} \in \mathbb{R}^{N\times H \times W}$，掩膜的作用在于对物体所处空间位置进行精确预测，排除掉剩余的无用像素点，H和W表示深度图的高度和宽度，本文中均取128，即输出的深度图的分辨率为$128\times 128$。为了降低模型的学习难度，本文为深度图输出添加深度先验，具体为，将Ground Truth深度图的渲染深度预设为深度值偏置，模型输出的预测深度值是相对于该预设深度的偏移量，因此，模型输出的深度图与预设深度值相加才是最终的深度图预测，通过这种方式，减少了模型预测深度的可能分布空间，有利于模型训练。
+在解码器模块中，对于$256\times 4 \times 4$的二维特征图，通过五层的双线性插值(Bilinear Interpolation)操作搭配二维卷积操作，将特征图尺寸扩展至$48 \times 128 \times 128$，之后，通过最后一层卷积操作得到$2N \times H \times W$的最终输出，该输出的通道数为2N，N对应的是输出视角个数，前N个通道的输出对应的是N个视角深度图的预测${D}_{pred} \in \mathbb{R}^{N\times H \times W}$，后N个通道的输出则是N个视角下物体所占据像素的掩膜${M}_{pred} \in \mathbb{R}^{N\times H \times W}$，掩膜的作用在于对物体所处空间位置进行精确预测，排除掉剩余的无用像素点，H和W表示深度图的高度和宽度，本文中均取128，即输出的深度图的分辨率为$128\times 128$。为了降低模型的学习难度，本文为深度图输出添加深度先验，具体为，将Ground Truth深度图的渲染深度预设为深度值偏置，模型输出的预测深度值是相对于该预设深度的偏移量，因此，模型输出的深度图与预设深度值相加才是最终的深度图预测，通过这种方式，减少了模型预测深度的可能分布空间，有利于模型训练。
 
 \begin{figure}[h]
     \centering
@@ -225,14 +225,14 @@
     \label{fig:decoder}
 \end{figure}
 \xsubsection{损失函数}{Loss Function}
-本小节为上文介绍的神经网络模型设计合理的损失函数，来为模型的训练过程提供合理的优化目标。考虑网络模型的两部分输出，第一部分输出为预测的深度图${Depth} \in \mathbb{R}^{N\times H \times W}$，第二部分输出为物体占据像素的掩膜${Mask} \in \mathbb{R}^{N\times H \times W}$，方便起见，下面只考虑单个视角下损失函数的计算，忽略掉第一个维度。
+本小节为上文介绍的神经网络模型设计合理的损失函数，来为模型的训练过程提供合理的优化目标。考虑网络模型的两部分输出，第一部分输出为预测的深度图${D}_{pred} \in \mathbb{R}^{N\times H \times W}$，第二部分输出为物体占据像素的掩膜${M}_{pred} \in \mathbb{R}^{N\times H \times W}$，方便起见，下面只考虑单个视角下损失函数的计算，忽略掉第一个维度。
 
-针对$Depth$，网络模型的优化目标应该是预测深度尽可能接近真实的深度图$Depth_{GT}$，同时考虑到掩膜外部像素位置的预测深度为无效深度，因此只对掩膜区域的深度值进行约束，可以对掩膜进行二值化，利用二值化后的掩膜与深度值相乘筛选出有效像素点。掩膜的二值化公式为：
+针对$D_{pred}$，网络模型的优化目标应该是预测深度尽可能接近真实的深度图$D_{gt}$，同时考虑到掩膜外部像素位置的预测深度为无效深度，因此只对掩膜区域的深度值进行约束，可以对掩膜进行二值化，利用二值化后的掩膜与深度值相乘筛选出有效像素点。掩膜的二值化公式为：
 
 \begin{equation}
     \mathcal{M}(i,j) = 
     \begin{cases} 
-    1, & \text{if  } Mask(i,j) > 0 \\
+    1, & \text{if  } M_{pred}(i,j) > 0 \\
     0, & \text{otherwise}
     \end{cases}
 \end{equation}
@@ -241,18 +241,18 @@
     \mathcal{L}_{\text{Depth}} = \frac{ 
     \sum_{i=1}^{H} \sum_{j=1}^{W} 
     \mathcal{M}(i,j) \cdot 
-    \left| Depth(i,j) - Depth_{GT}(i,j) \right|
+    \left| D_{pred}(i,j) - D_{gt}(i,j) \right|
     }{ 
     \sum_{i=1}^{H} \sum_{j=1}^{W} \mathcal{M}(i,j) 
     }
 \end{equation}
 
-针对$Mask$，网络模型的优化目标是使得预测的掩膜和真实的掩膜$Mask_{GT}$尽可能一致，$Mask_{GT}$是预先处理好的二值化的掩膜，值取0或1，0表示掩膜区域外，1表示掩膜区域内，而$Mask$是网络输出的浮点值，本文使用带Logits的二元交叉熵损失(Binary Cross-Entropy, BCE)函数来对掩膜进行约束。带Logits的BCE损失函数通过结合Sigmoid激活函数和BCE损失，可以直接接受未经过激活函数处理的原始输出，避免了数值不稳定的问题，对掩膜的损失函数表达式为：
+针对$M_{pred}$，网络模型的优化目标是使得预测的掩膜和真实的掩膜$M_{gt}$尽可能一致，$M_{gt}$是预先处理好的二值化的掩膜，值取0或1，0表示掩膜区域外，1表示掩膜区域内，而$M_{pred}$是网络输出的浮点值，本文使用带Logits的二元交叉熵损失(Binary Cross-Entropy, BCE)函数来对掩膜进行约束。带Logits的BCE损失函数通过结合Sigmoid激活函数和BCE损失，可以直接接受未经过激活函数处理的原始输出，避免了数值不稳定的问题，对掩膜的损失函数表达式为：
 \begin{equation}
     \begin{aligned}
     \mathcal{L}_{\text{Mask}} = -\frac{1}{H \cdot W} \sum_{i=1}^{H} \sum_{j=1}^{W} \Bigg[ 
-    & Mask_{GT}(i,j) \cdot \log \sigma\big(Mask(i,j)\big) \\
-    + & \big(1 - Mask_{GT}(i,j)\big) \cdot \log \left(1 - \sigma\big(Mask(i,j)\big)\right) 
+    & M_{gt}(i,j) \cdot \log \sigma\big(M_{pred}(i,j)\big) \\
+    + & \big(1 - M_{gt}(i,j)\big) \cdot \log \left(1 - \sigma\big(M_{pred}(i,j)\big)\right) 
     \Bigg]
     \end{aligned}
 \end{equation}
@@ -326,5 +326,86 @@
 \end{equation}
 ${R_i}\in \mathbb{R}^{4\times 4}$是合并之后唯一的变换矩阵。齐次世界坐标$P_{world} = \left[x_{world},y_{world},z_{world},1\right]$，只取其中的前三行元素，可以得到世界坐标系下的三维坐标，通过对第i个视角下深度图中所有像素都进行世界坐标转换，可以得到该视角下的局部点云${PC_{i}}\in \mathbb{R}^{3\times (H\cdot W)}$，此时该局部点云中包含了掩膜外深度图像素转换来的三维坐标点，因此需要使用掩膜来对点云中点进行滤除。网络输出的掩膜${Mask} \in \mathbb{R}^{N\times H \times W}$是像素的掩膜，需要将其进行重新排列并进行二值化得到布尔类型的点云的掩膜${Mask}_{pc}\in \mathbb{B}^{1\times (H\cdot W)}$，通过该掩膜中每个元素的布尔值对点云中相应位置的点进行保留或删除，这样就得到了第i个视角下最终的局部点云，之后，将所有视角下的局部点云合并在一起就得到了最终的全局点云${PC}\in \mathbb{R}^{3\times M}$。至此，我们通过像素点逆投影以及世界坐标系转换，将神经网络输出的多视角深度图转换成了物体的三维点云。
 \xsection{实验及结果分析}{Experiment and Result Analysis}
+\xsubsection{实验场景布置}{?}
+本文使用XeThru的X4M05商用脉冲超宽带雷达进行雷达信号采集，雷达的中心频率为7.29GHz，带宽为1.4GHz，雷达帧的生成频率为40Hz，该雷达仅具有一个发射天线和一个接收天线。为了让物体运动起来为雷达构建虚拟天线，本文将目标物体放置在滑轨的载物台上通过滑轨的运动带动物体运动，通过笔记本电脑同步控制滑轨的运动和雷达的信号采集，构建了一个雷达数据采集平台。
+
+实验场景布置如图\ref{?}所示，雷达与滑轨的垂直距离约为70cm，同时，为了保证雷达与载物台上物体尽量保持水平高度一致，雷达的水平高度会比载物台高大约10cm，在一次信号采集过程中，物体放置在载物台上，随着滑轨沿水平方向运动，运动距离大约为75cm，滑轨运动速度为1cm/s，因此每次运动时长大约为75s，乘以雷达帧的生成频率40Hz，每次运动过程中雷达采集到的帧数大约为3000帧。
+
+为了验证本文提出的三维点云重建方法在物体被遮挡情况下的性能表现，本文同样设置了遮挡情况下的信号采集场景，如图\ref{?}所示，物体被放置在载物台上的纸箱之内，物体和雷达之间的视线路径被纸箱所遮挡。
+\xsubsection{数据集采集}{?}
+为了获取到物体的高精度的三维结构信息作为标注数据，本文收集了共8个种类的48个物体的三维网格模型文件（.obj文件），并使用这些模型文件进行3D打印，得到了真是的物体，如图\ref{?}所示。之后分别在遮挡的情况下和非遮挡情况下使用上文中的雷达数据采集平台对物体的四个视角下的反射信号进行采集，并通过算法\ref{algo:augmentation}对雷达数据进行了数据增强，最终得到了9600组雷达数据，每组数据中包括4个视角下的雷达信号，因此共有38400条雷达数据。
+
+为了获取每个物体多视角下的深度图作为网络训练和评估时的Ground Truth，本文使用开源三维建模工具Blender（版本2.78）来对物体的等比例大小三维网格进行深度图渲染，得到了每个物体的高精度多视角深度图Ground Truth。同时为了评估最终的重建点云的性能表现，本文在物体三维网格上进行了平均采样，得到了致密的真实点云数据。
+\xsubsection{评估指标}{?}
+为了全面评估本文提出的三维点云重建方法的性能表现，本文考虑两类数据的精度表现，即网络模型预测的深度图的精度表现以及最终合成出的点云数据的精度表现。
+
+对于深度图的精度表现，本文使用深度图中每个像素点深度值的平均绝对误差来评估，即深度平均绝度误差(Depth Mean Absolute Error,D-MAE)，定义如下所示：
+\begin{equation}
+    \text{D-MAE} = \frac{1}{N}\sum_{i=1}^{N}|D_{pred}(i)-D_{gt}(i)|
+\end{equation}
+其中，$D_{pred}(i)$表示预测深度图第i个有效像素的深度值，$D_{gt}(i)$表示真实深度图对应像素的深度值，$N$表示有效像素总数，为了忽略掉深度图中没有物体出现的无效区域对结果的影响，本文使用网络输出的预测掩膜$M_{pred}$筛选出了有效的像素点。
+
+对于最终合成的点云数据的精度表现，本文采用了两种不同的评估指标。第一个评估指标是重建点云和真实点云（通过对物体三维网格进行平均采样得到的紧密点云）之间的倒角距离(Chamfer Distance,CD)。倒角距离是衡量两个点云相似性的常用指标，其定义为：对于两个点云$P=\{p_i\}_{i=1}^{N}$（重建点云）和$Q=\{q_j\}_{j=1}^{M}$（真实点云），倒角距离的计算分为两部分，（1）对$P$中每个点$p_i$，计算其到$Q$中最近点的距离，并取平均（2）对对$Q$中每个点$q_i$，计算其到$P$中最近点的距离，并取平均。最终，倒角距离为两者的和：
+\begin{equation}
+    \text{CD}(P, Q) = \frac{1}{N} \sum_{p \in P} \min_{q \in Q} \| p - q \|_2 + \frac{1}{M} \sum_{q \in Q} \min_{p \in P} \| q - p \|_2
+\end{equation}
+关于点云的第二个评估指标为重建点云在指定距离阈值$\tau$下的F-Score。重建点云在阈值$\tau$下的准确率(Precision)可以被定义为重建点云中有多少比例的点位置足够借接近真实点云，计算公式为：
+\begin{equation}
+    \text{Precision} = \frac{\sum_{p \in P} \mathbb{I}\left( \min_{q \in Q} \| p - q \| \leq \tau \right)}{N}
+\end{equation}
+其中，$\mathbb{I}(\cdot)$表示指示函数，当满足条件时，值为1，否则值为0。而召回率(Recall)可以被定义为真实点云中有多少比例的点被预测点云覆盖，计算公式为：
+\begin{equation}
+    \text{Recall} = \frac{\sum_{q \in Q} \mathbb{I}\left( \min_{p \in P} \| q - p \| \leq \tau \right)}{M}
+\end{equation}
+最终F-Score可以被表示为：
+\begin{equation}
+    \text{F-Score} = \frac{2 \cdot \text{Precision} \cdot \text{Recall}}{\text{Precision} + \text{Recall}}
+\end{equation}
+\xsubsection{实验设置}{?}
+本文使用上文采集到的数据集对三维点云重建方法进行了全面的评估，该数据集包括了大量的物体四个视角下的反射雷达信号数据，以及作为标注的物体多视角深度图和采样得到的真实点云。本文按照4:1:1的比例将该数据集划分为训练集，验证集和测试集，划分过程中保证单个物体所属数据仅会出现在其中一个数据集中，即网络模型在训练阶段并未见过验证集和测试集中物体的相关数据。
+
+网络模型?输出的深度图视角数被设置为4，深度图的分辨率设置为$128\times 128$，预设深度值偏置被设置为0.781，与Blender进行深度图渲染时的相机深度保持一致。网络模型?在单张RTX 3090显卡上进行训练，网络模型使用的深度学习框架为Pytorch 2.0.0，Python版本为3.8。网络模型训练过程中使用Adam优化器，初始学习率设置为$1.0\times 10^{-4}$，并采取学习率分阶段衰减的策略，网络模型一共训练50个epoch，在第30和第40个epoch时，将学习率乘以衰减因子0.3，确保整个训练过程的稳定性；权重衰减(Weight Decay)设置为$1.0\times 10^{-6}$，用于L2正则化，防止模型过拟合；Adam参数中的$\beta_1$和$\beta_2$分别为0.9和0.999，保持默认值。损失函数中的两个权重$\lambda_{\text{Mask}}$和$\lambda_{\text{Depth}}$均设置为1。
+\xsubsection{实验效果及评估}{?}
+1）总体性能评估
+
+本文首先使用上文提到的三个评估指标在整个数据集对本文的三维点云重建方法进行整体评估，实验结果如表\ref{tab:reconstruction_tblr}所示。
+\begin{table}[htbp]
+  \centering
+  \caption{点云重建性能表现（按物体类别）}
+  \label{tab:reconstruction_tblr}
+  \begin{tblr}{
+    width = 0.8\linewidth,
+    colspec = {
+      Q[l, mode=text] 
+      *{4}{Q[c, si={table-format=1.3}, mode=math]}
+    },
+    row{1} = {font=\small\bfseries, c, mode=text},
+    row{2} = {font=\small\bfseries, c, mode=text},
+    row{9} = {font=\small\bfseries, abovesep=0.5ex, belowsep=0.5ex},
+    hlines = {0.08em, solid}, 
+    vlines = {dashed}, % 可选：列间虚线（根据需求调整）
+  }
+    \toprule
+    Category & \SetCell[c=4]{c} Metrics & & & \\
+    \cmidrule[lr=-10pt]{2-5}
+    & \text{CD}_{\text{(×1e-4)}} 
+    & \text{F-Score}_{\tau=0.3} 
+    & \text{EMD}_{\text{(×1e-2)}} 
+    & \text{IoU} \\
+    \midrule
+    Chair       & 1.234 & 0.876 & 5.432 & 0.912 \\
+    Table       & 0.987 & 0.901 & 4.765 & 0.928 \\
+    Car         & 1.543 & 0.812 & 6.123 & 0.845 \\
+    Lamp        & 2.101 & 0.745 & 7.890 & 0.782 \\
+    Airplane    & 0.765 & 0.923 & 3.456 & 0.953 \\
+    Vase        & 1.876 & 0.793 & 6.543 & 0.801 \\
+    Guitar      & 1.432 & 0.854 & 5.678 & 0.872 \\
+    Bookshelf   & 1.654 & 0.832 & 6.234 & 0.836 \\
+    \midrule[0.1em] % 平均值分隔线
+    Average & 1.399 & 0.842 & 5.765 & 0.866 \\
+    \bottomrule
+  \end{tblr}
+\end{table}
+
 
 
