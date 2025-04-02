@@ -293,3 +293,5 @@ d_{f} = \frac{1}{\|\overrightarrow{l_f l_t} \|\cdot\|\overrightarrow{l_f l_r}\|}
     \theta_{\text{finetune}} = \arg\min_{\theta} \mathcal{L}_{\text{finetune}}(\theta; \mathcal{D}_{\text{t}}), \quad \text{s.t. } \theta_{\text{init}} = \theta_{\text{pretrain}}
 \end{equation}
 将预训练模型的模型参数$\theta_{\text{pretrain}}$作为微调阶段的初始模型参数，并在真实数据集上进行微调训练，得到最终的模型参数$\theta_{\text{finetune}}$。 得益于预训练模型已经从源域仿真数据集中学习到了大量的通用知识，其中包括雷达信号低层次特征提取能力以及高层次特征到空间几何的映射能力等，将预训练模型迁移到真实数据集上进行微调，相比于在真实数据集上从头学习，可以大大降低模型训练的迭代次数以及训练所需的数据量，同时也会在一定程度上提升模型在真实数据集上的性能表现。
+
+\xsection{实验及结果分析}{?}

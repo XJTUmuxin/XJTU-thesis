@@ -333,7 +333,7 @@ ${R_i}\in \mathbb{R}^{4\times 4}$是合并之后唯一的变换矩阵。齐次�
 
 为了验证本文提出的三维点云重建方法在物体被遮挡情况下的性能表现，本文同样设置了遮挡情况下的信号采集场景，如图\ref{?}所示，物体被放置在载物台上的纸箱之内，物体和雷达之间的视线路径被纸箱所遮挡。
 \xsubsection{数据集采集}{?}
-为了获取到物体的高精度的三维结构信息作为标注数据，本文收集了有可能出现在物流和安检场景里的共8个种类的48个物体的三维网格模型文件（.obj文件），并使用这些模型文件进行3D打印，得到了真是的物体，如图\ref{?}所示。之后分别在遮挡的情况下和非遮挡情况下使用上文中的雷达数据采集平台对物体的四个视角下的反射信号进行采集，并通过算法\ref{algo:augmentation}对雷达数据进行了数据增强，最终得到了9600组雷达数据，每组数据中包括4个视角下的雷达信号，因此共有38400条雷达数据。
+为了获取到物体的高精度的三维结构信息作为标注数据，本文收集了有可能出现在物流和安检场景里的共8个种类的48个物体的三维网格模型文件（.obj文件），并使用这些模型文件进行3D打印，得到了真实的物体，如图\ref{?}所示。之后分别在遮挡的情况下和非遮挡情况下使用上文中的雷达数据采集平台对物体的四个视角下的反射信号进行采集，并通过算法\ref{algo:augmentation}对雷达数据进行了数据增强，最终得到了9600组雷达数据，每组数据中包括4个视角下的雷达信号，因此共有38400条雷达数据。
 
 为了获取每个物体多视角下的深度图作为网络训练和评估时的Ground Truth，本文使用开源三维建模工具Blender（版本2.78）来对物体的等比例大小三维网格进行深度图渲染，得到了每个物体的高精度多视角深度图Ground Truth。同时为了评估最终的重建点云的性能表现，本文在物体三维网格上进行了平均采样，得到了致密的真实点云数据。
 \xsubsection{评估指标}{?}
@@ -403,13 +403,13 @@ ${R_i}\in \mathbb{R}^{4\times 4}$是合并之后唯一的变换矩阵。齐次�
 \begin{figure}[htbp]
     \centering
     \begin{subfigure}[b]{0.45\textwidth}
-        \includegraphics[width=\textwidth]{Figures/D-MAE_occlusion_comparison.pdf}
+        \includegraphics[width=\textwidth]{Figures/occluded/D-MAE_occlusion_comparison.pdf}
         \caption{D-MAE对比(越小越好)}
         \label{fig:occ-a}
     \end{subfigure}
     \hfill
     \begin{subfigure}[b]{0.45\textwidth}
-        \includegraphics[width=\textwidth]{Figures/CD_occlusion_comparison.pdf}
+        \includegraphics[width=\textwidth]{Figures/occluded/CD_occlusion_comparison.pdf}
         \caption{CD对比(越小越好)}
         \label{fig:occ-b}
     \end{subfigure}
@@ -417,13 +417,13 @@ ${R_i}\in \mathbb{R}^{4\times 4}$是合并之后唯一的变换矩阵。齐次�
     \vspace{0.5cm} % 行间距调整
     
     \begin{subfigure}[b]{0.45\textwidth}
-        \includegraphics[width=\textwidth]{Figures/F-Score(τ)_occlusion_comparison.pdf}
+        \includegraphics[width=\textwidth]{Figures/occluded/F-Score(τ)_occlusion_comparison.pdf}
         \caption{F-Score($\tau$)对比(越大越好)}
         \label{fig:occ-c}
     \end{subfigure}
     \hfill
     \begin{subfigure}[b]{0.45\textwidth}
-        \includegraphics[width=\textwidth]{Figures/F-Score(2τ)_occlusion_comparison.pdf}
+        \includegraphics[width=\textwidth]{Figures/occluded/F-Score(2τ)_occlusion_comparison.pdf}
         \caption{F-Score($2\tau$)对比(越大越好)}
         \label{fig:occ-d}
     \end{subfigure}
@@ -463,3 +463,41 @@ ${R_i}\in \mathbb{R}^{4\times 4}$是合并之后唯一的变换矩阵。齐次�
 \end{tblr}
 \end{table}
 表\ref{table:single-normal}中展示了各类别物体上单类别模型和通用模型在各个评估指标上的表现。表中可以看出，对于大部分类别物体下的各项评估指标来说，通用模型都有与单类别模型接近甚至更好的性能表现，而对于整体平均值来说，单类别模型的CD为5.355，通用模型的CD为5.326；单类别模型的F-Score($\tau$)为61.02\%，通用模型为62.17\%；单类别模型的F-Score($2\tau$)为74.79\%，通用模型为76.34\%；对于三项指标，通用模型均具有较小程度上的领先。单类别模型是在数据分布更一致的子数据上进行训练的，而通用模型是在数据分布更复杂的整体数据集上进行训练的，上述数据表明通用模型并未在性能表现上产生下降，说明本文设计的网络模型具有足够的鲁棒性和泛化性；同时得益于通用模型从整体数据集上学习到的更通用的表征提取能力，反而使得通用模型在各类别物体上的性能表现得到一些提升。
+
+4）数据增强消融实验
+
+在章节\ref{sec:aug}中，本文提出了雷达信号数据的数据增强算法，该数据增强算法通过虚拟天线偏移(Virtual Antenna Shift, VAS)和相位旋转(Phase Rotation, PR)两种方式来生成物体的初始位置发生小范围位移时对应的雷达信号数据，对雷达信号数据的数据增强提升了数据集中的数据多样性，缓解了数据不足的问题，有效提升了模型的泛化能力，减少了模型过拟合的可能性。为了验证本文所提出的两种数据增强方式的有效性，本小节对两种数据增强方法进行了消融实验，一共有四种实验设置，第一种仅使用初始数据，并不进行任何数据增强，作为Baseline；第二种仅使用虚拟天线偏移（VAS）方法对初始数据集进行数据增强；第三种仅使用相位旋转（PR）方法对初始数据集进行数据增强；最后一种同时使用两种方法对初始数据集进行数据增强（VAS+PR），这也是本文其他实验普遍使用的数据集；在这四种实验设置下的数据集上分别对模型进行训练和测试，探究不同实验设置下的模型性能表现。不同数据增强方式下各评估指标的整体表现如图\ref{fig:ablation}所示。
+
+\begin{figure}[htbp]
+    \centering
+    \begin{subfigure}[b]{0.45\textwidth}
+        \includegraphics[width=\textwidth]{Figures/ablation/D-MAE.pdf}
+        \caption{D-MAE对比(越小越好)}
+        \label{fig:ablation-a}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.45\textwidth}
+        \includegraphics[width=\textwidth]{Figures/ablation/CD.pdf}
+        \caption{CD对比(越小越好)}
+        \label{fig:ablation-b}
+    \end{subfigure}
+    
+    \vspace{0.5cm} % 行间距调整
+    
+    \begin{subfigure}[b]{0.45\textwidth}
+        \includegraphics[width=\textwidth]{Figures/ablation/F-Score(τ).pdf}
+        \caption{F-Score($\tau$)对比(越大越好)}
+        \label{fig:ablation-c}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.45\textwidth}
+        \includegraphics[width=\textwidth]{Figures/ablation/F-Score(2τ).pdf}
+        \caption{F-Score($2\tau$)对比(越大越好)}
+        \label{fig:ablation-d}
+    \end{subfigure}
+    
+    \caption{不同数据增强方式下各评估指标对比}
+    \label{fig:ablation}
+\end{figure}
+
+从图\ref{fig:ablation}中可以看出，对于全部四个评估指标，虚拟天线偏移（VAS）数据增强方法和相位旋转（PR）数据增强方法相比于不做任何数据增强的Baseline来说都有较为显著的性能提升，同时，结合两种方式的数据增强（VAS+PR）相比于单独一种数据增强方式又有较为明显的性能提升，在四个评估指标上均达到了最优性能，证明了本文提出的两种数据增强方式的有效性。

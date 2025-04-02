@@ -24,8 +24,8 @@
 *.zld
 *.zlg
 *.zln
-*.pdf
-!/Build/*.pdf
+# *.pdf
+# !/Build/*.pdf
 ## Intermediate documents:
 *.dvi
 *.xdv
@@ -319,11 +319,11 @@ TSWLatexianTemp*
 # Web P
 *.webp
 
-# Portable Network Graphics
-*.png
+# # Portable Network Graphics
+# *.png
 
-# Animated Portable Network Graphics
-*.apng
+# # Animated Portable Network Graphics
+# *.apng
 
 # Multiple-image Network Graphics
 *.mng
@@ -332,12 +332,12 @@ TSWLatexianTemp*
 *.tiff
 *.tif
 
-# Scalable Vector Graphics
-*.svg
-*.svgz
+# # Scalable Vector Graphics
+# *.svg
+# *.svgz
 
-# Portable Document Format
-*.pdf
+# # Portable Document Format
+# *.pdf
 
 # X BitMap
 *.xbm
@@ -357,6 +357,6 @@ TSWLatexianTemp*
 !.vscode
 .vscode/*
 !.vscode/settings.json
-!/Figures/*.png
-!/Figures/*.pdf
+!/Figures/*
+!/Figures/*
 !/Build/*.pdf
