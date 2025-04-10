@@ -1,16 +1,20 @@
 
 % !TeX root = ../main.tex
 \begin{englishabstract}
-    \footnotetext{*The work was supported by the Foundation (foundation ID).}
+    % \footnotetext{*The work was supported by the Foundation (foundation ID).}
     % \astfootnote{The work was supported by the Foundation (foundation ID).}
-    \blindtext
+    % \blindtext
 
-    \blindtext
+    % \blindtext
 
-    \blindtext
+    % \blindtext
 
-    \blindtext
+    % \blindtext
+    Three-dimensional (3D) reconstruction technology has achieved significant breakthroughs over decades of development and is widely applied in industrial inspection, autonomous driving, cultural heritage preservation, and other fields, providing high-precision spatial information for downstream tasks such as object recognition and scene understanding. However, traditional image-based 3D reconstruction methods still face limitations in specific scenarios, such as logistics sorting and security inspection, where objects are often wrapped or obscured, and environmental lighting conditions are restricted or visually occluded, rendering image-based methods ineffective. Existing radio frequency (RF)-based 3D reconstruction methods heavily rely on complex RF systems with high hardware costs. Therefore, developing a low-cost, penetration-capable 3D reconstruction method is of great research significance. This paper addresses these challenges through the following two aspects of research.
 
-    \englishkeywordstype{MHD equations; Finite element methods; Decoupled scheme; Stability; Convergence; Structure preserving; Preconditioning method}{Theoretical Research}
+    First, we propose a 3D point cloud reconstruction method based on ultra-wideband (UWB) virtual array. This method uses a low-cost commercial UWB radar with a single transmitter and receiver to collect object signals, followed by a signal processing pipeline to obtain clean target signals. To address insufficient data diversity in radar data, we design a data augmentation algorithm. A neural network model is then employed to extract 3D structural information from radar signals and generate multi-view depth maps. Through depth map inverse projection and point cloud fusion, the reconstructed point cloud is generated. Experiments on a self-built dataset demonstrate that the proposed method achieves a Chamfer Distance (CD) error of 5.326 cm for reconstructed point clouds, with F1 scores of 62.17\% and 76.34\% under 2 cm and 4 cm thresholds, respectively. In fully occluded scenarios, the CD error increases by only 0.977 cm compared to non-occluded scenarios, validating the method's robustness to occlusions.
+    
+    Second, we introduce a transfer learning strategy based on pre-training with simulated data. By leveraging a physics-based simulation algorithm for radar signals and a deep learning-based signal refinement neural network, we construct a large-scale simulated dataset. A "pre-training followed by fine-tuning" training strategy is then adopted, where the model is pre-trained on simulated data and fine-tuned on real data to improve data efficiency, training speed, and performance. Under this strategy, even with only 5\% of real dataset samples used for fine-tuning, the model achieves a CD error of 5.1747 cm. The training cycle is reduced from 50 epochs to just 8 epochs, while full real data fine-tuning further reduces the CD error to 4.868 cm.
+    \englishkeywordstype{IR-UWB Radar; 3D Reconstruction; Deep Learning; Transfer Learning}{Application Research}
 
 \end{englishabstract}
