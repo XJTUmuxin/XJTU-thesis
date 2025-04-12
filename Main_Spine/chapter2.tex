@@ -10,48 +10,56 @@
     \caption{脉冲超宽带雷达的调制解调流程}
     \label{fig:baseband}
 \end{figure}
-载波上的高斯脉冲$g(t)$，脉冲信号会以间隔$T_s$周期性地发射，发射信号的数学表示如下：
+载波上的高斯脉冲$g(t)$，脉冲信号会以间隔$T_s$周期性地发射，发射信号的数学表示如公式(\ref{equa:trans_signal})所示：
 \begin{equation}
+    \label{equa:trans_signal}
     x(t) = g(t-kT_s)\cos(2\pi f_c(t-kTs))
 \end{equation}
-高斯脉冲信号$g(t)$可以表示为：
+高斯脉冲信号$g(t)$可以表示为公式(\ref{equa:gauss})：
 \begin{equation}
+    \label{equa:gauss}
     g(t) = V_{tx} exp(-2{\pi}^2{f_B}^2{log}_{10} (e)t^2)
 \end{equation}
-其中，$f_B$表示-10dB带宽，$V_{tx}$是高斯脉冲的最大幅值。雷达发射的信号被环境中的物体反射并由接收天线接收，通常，发射天线和接收天线会被雷达集成到同一位置上。由于感知范围内存在着不同的反射物体，因此信道响应$h(t)$可以表示为具有不同时延和衰减的$P$条路径的总和：
+式中：$f_B$——-10dB带宽；$V_{tx}$——高斯脉冲的最大幅值。雷达发射的信号被环境中的物体反射并由接收天线接收，通常，发射天线和接收天线会被雷达集成到同一位置上。由于感知范围内存在着不同的反射物体，因此信道响应$h(t)$可以表示为具有不同时延和衰减的$P$条路径的总和，如公式(\ref{equa:h(t)})所示：
 \begin{equation}
+    \label{equa:h(t)}
     h(t) = \sum_{p=1}^{P}\alpha_p \delta(t-T_p)
 \end{equation}
-其中$T_p$是由反射路径距离决定的往返飞行时间，$\delta(t)$表示单位冲激函数，$\alpha_{p}$可以看做是该反射路径固有的反射强度系数，那么接收天线接收到的信号$y(t)$就可以被建模成发射信号与信道脉冲响应的卷积再加上噪声$n(t)$，即：
+式中：$T_p$——反射路径距离决定的往返飞行时间；$\delta(t)$——单位冲激函数；$\alpha_{p}$——该反射路径固有的反射强度系数。那么接收天线接收到的信号$y(t)$就可以被建模成发射信号与信道脉冲响应的卷积再加上噪声$n(t)$，如公式(\ref{equa:y(t)})所示：
 \begin{equation}
+    \label{equa:y(t)}
     \begin{aligned}
-        y(t) &= x(t) * h(t) + n(t) = \sum_{p=1}^P \alpha_p g(t - kT_s - T_p) \times \cos\left(2\pi f_c (t - kT_s - T_p)\right) + n(t)
+        y(t) &= x(t) * h(t) + n(t) \\
+        &= \sum_{p=1}^P \alpha_p g(t - kT_s - T_p) \times \cos\left(2\pi f_c (t - kT_s - T_p)\right) + n(t)
     \end{aligned}
 \end{equation}
-在接收侧，会对接收信号$y(t)$进行下变频操作，具体操作为将$y(t)$在混频器中与载波余弦及正弦信号相乘，再通过低通滤波器(Low-Pass Filter, LPF)，分别得到I路信号(In-phase Signal)和Q路信号（(Quadrature Signal)），对于I路信号，将$y(t)$与余弦载波$\cos(2\pi f_c(t-kT_S))$相乘后，仅考虑余弦部分，有：
+在接收侧，会对接收信号$y(t)$进行下变频操作，具体操作为将$y(t)$在混频器中与载波余弦及正弦信号相乘，再通过低通滤波器(Low-Pass Filter, LPF)，分别得到I路信号(In-phase Signal)和Q路信号（(Quadrature Signal)），对于I路信号，将$y(t)$与余弦载波$\cos(2\pi f_c(t-kT_S))$相乘后，仅考虑余弦部分，如公式(\ref{equa:m(t)})所示：
 \begin{equation}
+    \label{equa:m(t)}
     \begin{aligned}
         m(t) &= \cos(2\pi f_c (t - kT_S - T_p)) \times \cos(2\pi f_c (t - kT_s)) \\
              &= \frac{1}{2} \left[ \cos \left( 2\pi 2f_c \left( t - kT_s - \frac{T_p}{2} \right) \right) + \cos(2\pi f_c T_p) \right]
     \end{aligned}
 \end{equation}
-由于$2f_c$频率分量会被低通滤波器滤除，因此只有低频分量$\frac{1}{2}\cos(2\pi f_c T_p)$被留下，因此，在经过下变频和滤波器后的I路信号为:
+由于$2f_c$频率分量会被低通滤波器滤除，因此只有低频分量$\frac{1}{2}\cos(2\pi f_c T_p)$被留下，因此，在经过下变频和滤波器后的I路信号如公式(\ref{equa:in-phase})所示:
 \begin{equation}
+    \label{equa:in-phase}
     \begin{aligned}
         y_\text{in-phase}(t) &= LPF[y(t)\cdot cos(2\pi f_c(t-kT_s))] \\
                         &= \frac{1}{2}\sum_{p=1}^{P} \alpha_p g(t-kT_s-T_p)\times\cos(2\pi f_c T_p) +n(t)
     \end{aligned}
 \end{equation}
-同理，也可以得到Q路信号：
+同理，也可以得到Q路信号，如公式(\ref{equa:quad})所示：
 \begin{equation}
+    \label{equa:quad}
     \begin{aligned}
         y_\text{quad}(t) &= LPF[y(t)\cdot\sin(2\pi f_c(t-kT_s))] \\
                     &= \frac{1}{2}\sum_{p=1}^{P} \alpha_p g(t-kT_s-T_p) \times \sin(2\pi f_c T_p) + n(t)
     \end{aligned}
 \end{equation}
-在数字信号处理领域，I路信号和Q路信号通常一起组成复数信号，那么根据欧拉公式，复数形式的接收信号$y_\text{complex}(t)$可以做如下推导：
+在数字信号处理领域，I路信号和Q路信号通常一起组成复数信号，那么根据欧拉公式，可以对复数形式的接收信号$y_\text{complex}(t)$进行推导，如公式(\ref{equa:y_complex})所示：
 \begin{equation}
-    \label{equ:y_complex}
+    \label{equa:y_complex}
     \begin{aligned}
         y_\text{complex}(t) &= y_\text{in-phase}(t) + j\cdot y_\text{quad} \\
                     &= \frac{1}{2}\sum_{p=1}^{P}\alpha_p g(t-kT_s-T_p)\times[\cos(2\pi f_c T_p)+j\cdot \sin(2\pi f_c T_p)] + n(t) \\
@@ -60,6 +68,7 @@
 \end{equation}
 从复数形式的接收信号上，可以很直观地看出，最终的接收信号其实是多个路径的复数反射信号以及噪声的叠加，路径$p$对应的复数反射信号的幅值$A_{p}$为$\frac{1}{2}\alpha_pg(t-kT_s-T_p)$，相位$\theta_p$为$2\pi f_c T_p$。至此，完成了对脉冲超宽带雷达接收信号的数学推导。
 \xsubsection{脉冲超宽带雷达数据结构}{Impulse Radio Ultra-Wideband (IR-UWB) Radar Data Structure}
+\label{sec:radar-data}
 在上一小节中完成了对脉冲超宽带雷达从发射信号到接收信号做了严格的数学推导，下面对雷达接收信号的最终数据结构以及对应的物理意义进行分析。上一小节提到，雷达会以$T_s$为周期持续发射脉冲信号，将从一个脉冲发射开始到该脉冲对应最后一个响应到达结束期间采样到的数据称为一帧(Frame)。在一帧内，时间$t$的概念对应于脉冲信号的飞行时间，因此称之为快时间。雷达连续发射脉冲，所有帧按照时间顺序排序，因此，每一帧可以看做是在更慢时间尺度上的采样，将其称之为慢时间，通常，快时间的尺度为数十皮秒，而慢时间的尺度为数百微秒。如果将连续接收到的帧按时间顺序排列起来，那么可以得到一个二维矩阵，如图\ref{fig:slow_time_fast_time}所示。
 \begin{figure}[htbp]
     \centering
