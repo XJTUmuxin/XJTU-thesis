@@ -306,7 +306,7 @@ d_{f} = \frac{1}{\|\overrightarrow{l_f l_t} \|\cdot\|\overrightarrow{l_f l_r}\|}
 
 \xsection{仿真信号数据集到真实信号数据集的迁移学习}{Transfer Learning from Simulated Signal Dataset to Real Signal Dataset}
 前两节中介绍了基于信号建模的雷达信号仿真以及基于深度学习的仿真信号域适应，通过这两个步骤，可以从物体三维模型得到域适应后的仿真信号数据，基于此，本文可以通过公开数据集中大量的物体三维模型生成对应的仿真信号并构建出一个大规模的仿真信号数据集，之后，采用迁移学习中的“预训练 (Pre-training)-微调 (Fine-tuning)”两阶段学习范式，首先将章节\ref{sec:signal2pc}中的三维重建网络模型在仿真信号数据集上进行预训练，得到已经学习到通用知识的预训练模型，之后仅在真实信号数据集上进行简单微调，即可达到良好的性能表现。
-\xsubsection{仿真信号数据集生成}{Generation of Simulated Signal Dataset}
+\xsubsection{仿真信号数据集}{Simulated Signal Dataset}
 \label{sec:simualte_dataset}
 根据章节\ref{chapter:ch3}中对真实信号数据集的定义，真实信号数据集中包含了物体四个视角下的真实雷达信号数据以及作为标注的固定视角下的深度图，仿真信号数据集应该与真实信号数据集相对应，包含物体四个视角下的仿真信号数据以及作为标注的深度图。
 
