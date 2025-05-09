@@ -413,7 +413,43 @@ MSE定义如下：
 \subsubsection{实验设置}
 对于网络模型训练的基础实验设置，与章节\ref{sec:experiment_setup}中保持一致。针对在仿真信号数据集上的预训练阶段，为了让模型在源域上学习到足够的通用知识，将模型在仿真信号数据集的训练集上共训练110个epoch，同样采取学习率分阶段衰竭的策略，在第30、第70和第90个epoch时，将学习率乘以衰减因子0.3，初始学习率为$1.0\times 10^{-4}$，同样使用Adam优化器，参数配置与前文保持一致。针对在真实信号数据集上的微调阶段，为了与章节\ref{chapter:ch3}中的在真实信号数据集上从头训练作对比，因此，微调阶段的训练设置与从头训练时的训练设置保持一致。
 \subsubsection{仿真信号数据集上三维点云重建性能评估}
-为了验证预训练阶段SMDRNet在仿真信号数据集是否进行了充分学习，本文对SMDRNet在仿真信号数据集上的性能表现进行了完整评估，评估指标沿用章节\ref{sec:metric}中的评估指标。仿真信号数据集上三维点云重建方法的性能表现如表\ref{table:shapenet_overall}所示。
+为了验证预训练阶段SMDRNet在仿真信号数据集是否进行了充分学习，最终在仿真信号数据集上的点云重建效果如图\ref{fig:shapenet_result}所示。
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=1.0\textwidth,
+    trim={0 0 0 0},
+    clip]{Figures/shapenet_重建结果.pdf}
+    \caption{仿真信号数据集上三维点云重建效果}
+    \label{fig:shapenet_result}
+\end{figure}
+本文的仿真信号数据集是基于ShapeNet数据集生成的，有大量的基于图像的三维重建工作是在ShapeNet数据集上进行探究的，因此本文展示了两个代表性工作在ShapeNet数据集上的三维重建效果，如图\ref{fig:img_method}，与本文方法在仿真信号数据集上的重建效果作比较，由于本文在使用ShapeNet中的三维物体做信号仿真时，还原了物体本身的物理尺寸，与原本数据集中的尺寸并不保持一致，因此，无法展开具体评估指标数值上的比较。
+\begin{figure}[htbp]
+    \centering
+    \begin{subfigure}[b]{0.49\textwidth}
+        \includegraphics[width=\textwidth,
+        trim={30 0 30 0}, % 左、下、右、上裁剪值（单位：pt）
+        clip,]{Figures/Learning.pdf}
+        \caption{Lin等\cite{lin2018learning}}
+        \label{fig:img_method-a}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.49\textwidth}
+        \includegraphics[width=\textwidth,
+        trim={30 0 20 0},
+        clip,]{Figures/pixel2mesh++.pdf}
+        \caption{Pixel2Mesh++\cite{wang2018pixel2mesh}}
+        \label{fig:img_method-b}
+    \end{subfigure}
+    
+    \caption{基于图像方法在ShapeNet数据集上重建效果}
+    \label{fig:img_method}
+\end{figure}
+Lin等\cite{lin2018learning}提出了一种通过单张图像实现的物体致密点云重建方法，使用基于二维卷积的结构生成器预测不同视角的三维结构并融合为致密点云；Pixel2Mesh++\cite{wang2018pixel2mesh}提出了一种使用少量不同视角图像去对物体进行三维网格重建的方法，通过对网格进行系列变形逐步优化网格形状。通过对比图\ref{fig:shapenet_result}中本文方法在仿真信号数据集上的重建效果以及图\ref{fig:img_method}中基于图像方法在ShapeNet上的重建效果，可以看出，本文方法的重建点云在致密程度上劣于Lin等\cite{lin2018learning}，但点云分布相似程度较为接近，虽然仿真信号数据集的理想化信号一定程度上降低了点云重建的难度，但仍在一定程度上证明了本文方法的有效性。
+
+
+
+
+本文对SMDRNet在仿真信号数据集上的性能表现进行了完整评估，评估指标沿用章节\ref{sec:metric}中的评估指标。仿真信号数据集上三维点云重建方法的性能表现如表\ref{table:shapenet_overall}所示。
 \begin{table}[H]
 \centering
 \caption{仿真信号数据集上三维点云重建性能表现}
