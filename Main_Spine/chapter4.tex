@@ -11,8 +11,8 @@
 在章节\ref{sec:UWB_sense}中已经对雷达接收信号进行了详细的数学建模，具体见公式\ref{equa:y_complex}，然而在该建模中，最终的接收信号被简单表示成多个路径反射信号的叠加，但并没有对每条路径的物理意义进行进一步讨论，如果要对三维物体的反射信号进行精确建模，必须考虑物体可能产生的每条反射路径。根据文献\cite{korany2019xmodal,xue2023towards}中对物体反射WiFi信号的建模方式，物体的整体反射信号可以被看做是物体三维网格（Mesh）的每个三角形面（Face）的反射信号的叠加，这种建模方式细化了物体作为反射物时产生的反射路径的粒度，本文参考该文献中的建模方式，对三维物体的超宽带雷达反射信号进行了物理模拟，如图\ref{fig:signal_simulate}所示。
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=1.0\textwidth,
-    trim={0 40 0 40},  % 左、下、右、上裁剪值（单位：pt）
+    \includegraphics[width=0.75\textwidth,
+    trim={0 40 80 40},  % 左、下、右、上裁剪值（单位：pt）
     clip]{Figures/physic_model.pdf}
     \caption{三维物体雷达信号模拟}
     \label{fig:signal_simulate}
@@ -30,8 +30,8 @@
 首先考虑三角形面与收发天线角度对反射强度的影响。当三角形面和收发天线的位置关系如图\ref{fig:face_location}所示时，将发射天线和接收天线的位置坐标分别表示为$l_t \in \mathbb{R}^3$和$l_r \in \mathbb{R}^3$， 该三角形面的三个顶点的坐标分别表示为$v_a\in \mathbb{R}^3$，$v_b\in \mathbb{R}^3$和
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=1.0\textwidth,
-    trim={0 0 0 0},  % 左、下、右、上裁剪值（单位：pt）
+    \includegraphics[width=0.75\textwidth,
+    trim={100 40 100 40},  % 左、下、右、上裁剪值（单位：pt）
     clip]{Figures/face_location.pdf}
     \caption{三角形面与收发天线的位置关系}
     \label{fig:face_location}
@@ -96,7 +96,7 @@ d_{f} = \frac{1}{\|\overrightarrow{l_f l_t} \|\cdot\|\overrightarrow{l_f l_r}\|}
 \xsubsection{物体三维网格细分及遮挡面去除}{3D Mesh Subdivision of Objects and Occluded Surface Removal}
 在上一小节中，通过将物体的整体反射信号拆分成三维网格中每个小三角形面的反射信号的叠加，并对每个面的反射信号进行了详细的数学建模，最终计算出物体整体的反射信号。通过这种建模方式计算出的物体反射信号的精确程度很大程度上依赖于物体三维网格的细化程度，当三维网格中每个三角形面的面积足够小时，计算出的理论反射信号也更逼近于真实反射信号，因此，考虑在对物体反射信号仿真之前，先对物体三维网格进行细分（Subdivision）。
 
-在ShapeNet\cite{chang2015shapenet}等公开数据集中，并不对物体三维网格中三角形面的精细程度做保证，尤其是当一些物体存在较平整的大面积区域时，这些平整区域可能仅由数个大的三角形面表示，这种粗略表示会影响物理模拟仿真信号的准确程度，本文设计了一种基于面积阈值的三维网格细分算法\ref{alg:adaptive_subdivision}，该算法能对三维网格中较大面积的面进行细分，确保最终的三维网格中所有三角形面都保持一个较高的精细程度。算法中首先为三角形面积设置一个阈值$A_\text{thresh}$，计算三维网格中每个三角形面积并挑选出面积大于阈值的面，对选中面执行细分操作，本文使用的细分方法为简单的线性细分，即通过连接原始三角形各边的中点，生成新的四个小三角形；通过不断迭代上述操作直到三维网格中所有面的面积都小于阈值。在真实应用时，考虑到不同物体的尺寸存在差异，为所有物体设置一个固定的面积阈值并不合理，因此考虑将面积阈值设置为固定阈值和动态阈值（三维网格面积和的1/n）的较小值，即$A_\text{thresh} = \min(0.02^2,\frac{\sum A}{n})$，确保所有三维物体都有一个相对精细的面积阈值。三维网格的细分效果如图\ref{fig:subdivision}所示，图\ref{fig:subdivision-a}中为细分前的三维网格，可以看到存在许多面积巨大的三角形面，通过上述算法细分后的三维网格如图\ref{fig:subdivision-b}所示，较大三角形面被均匀细分为小三角形面。
+在ShapeNet\cite{chang2015shapenet}等公开数据集中，并不对物体三维网格中三角形面的精细程度做保证，尤其是当一些物体存在较平整的大面积区域时，这些平整区域可能仅由数个大的三角形面表示，这种粗略表示会影响物理模拟仿真信号的准确程度，本文设计了一种基于面积阈值的三维网格细分算法\ref{alg:adaptive_subdivision}，该算法能对三维网格中较大面积的面进行细分，确保最终的三维网格中所有三角形面都保持一个较高的精细程度，细分效果如图\ref{fig:subdivision}所示。
 \begin{figure}[htbp]
     \centering
     \begin{subfigure}[b]{0.45\textwidth}
@@ -113,6 +113,7 @@ d_{f} = \frac{1}{\|\overrightarrow{l_f l_t} \|\cdot\|\overrightarrow{l_f l_r}\|}
     \caption{三维网格细分前后对比}
     \label{fig:subdivision}
 \end{figure}
+算法中首先为三角形面积设置一个阈值$A_\text{thresh}$，计算三维网格中每个三角形面积并挑选出面积大于阈值的面，对选中面执行细分操作，本文使用的细分方法为简单的线性细分，即通过连接原始三角形各边的中点，生成新的四个小三角形；通过不断迭代上述操作直到三维网格中所有面的面积都小于阈值。在真实应用时，考虑到不同物体的尺寸存在差异，为所有物体设置一个固定的面积阈值并不合理，因此考虑将面积阈值设置为固定阈值和动态阈值（三维网格面积和的1/n）的较小值，即$A_\text{thresh} = \min(0.02^2,\frac{\sum A}{n})$，确保所有三维物体都有一个相对精细的面积阈值。图\ref{fig:subdivision-a}中为细分前的三维网格，可以看到存在许多面积巨大的三角形面，通过上述算法细分后的三维网格如图\ref{fig:subdivision-b}所示，较大三角形面被均匀细分为小三角形面。
 
 \begin{algorithm}[H]
 \caption{三维网格细分算法}

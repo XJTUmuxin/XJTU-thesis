@@ -140,7 +140,7 @@
 \label{sec:aug}
 在基于深度学习的三维物体重建方法中，数据质量和数量直接决定了神经网络模型的泛化能力和重建精度。然而，由于本文的超宽带虚拟阵列构建方法使得每组雷达信号的采集都较为繁琐耗时，因此雷达信号数据集面临着数据采集成本高，数据样本单一的问题，数据增强技术作为缓解数据不足、提升模型鲁棒性的核心手段，通过生成多样化的合成数据，能够在有限的原始数据基础上扩展训练集，从而减少过拟合风险并增强模型对复杂场景的适应性。因此，在将提取到的有效雷达信号输入到深度学习神经网络中进行训练前，本文对雷达信号进行数据增强，提升数据集中数据的多样性。
 
-首先分析雷达信号数据集中数据单一性产生的原因。回顾超宽带虚拟阵列构建的方法，通过物体相对于雷达的运动，等效出虚拟天线，物体运动过程中，雷达不断收发信号，接收到的一组信号可以等效为多个虚拟天线接收到的信号，然而在这一过程中，当物体的初始放置位置发生一些微小位移，最终接收到的信号会发生明显的变化，在数据集采集过程中，很难对物体的所有可能初始位置进行遍历，这也就造成了数据集中样本的单一，幸运的是，可以通过数据增强的方法从一个原始数据合成出物体初始位置发生位移时对应的其他雷达信号数据。
+首先分析雷达信号数据集中数据单一性产生的原因。回顾超宽带虚拟阵列构建的方法，通过物体相对于雷达的运动，等效出虚拟天线，物体运动过程中，雷达不断收发信号，接收到的一组信号可以等效为多个虚拟天线接收到的信号，然而在这一过程中，当物体的初始放置位置发生一些微小位移（厘米级别），最终接收到的信号会发生明显的变化，在数据集采集过程中，很难对物体的所有可能初始位置进行遍历，这也就造成了数据集中样本的单一，幸运的是，可以通过数据增强的方法从一个原始数据合成出物体初始位置发生位移时对应的其他雷达信号数据。
 
 由于物体放置平台与雷达的高度是固定的，因此物体初始位置只会在放置平台所处平面的两个维度上发生微小位移，即沿物体运动方向和垂直物体运动方向，本文通过分析当物体初始位置在两个维度上发生微小位移时对应雷达信号的变化，设计出针对这两种情况下的数据增强方法，即虚拟天线偏移（Virtual Antenna Shift，VAS）和相位旋转（Phase Rotation，PR）。
 \xsubsection{虚拟天线偏移数据增强}{Virtual Antenna Shift Data Augmentation}
@@ -191,7 +191,7 @@
                                    &= 2\pi f_c \Delta T
     \end{aligned}
 \end{equation}
-当距离变化为$1cm$时，带入$f_c = 7.29GHz$，可以得到$\Delta \theta_{p}(\text{ant},\text{bin}) = 3.07$，这对于相位来说是一个极大的改变。考虑多个路径信号叠加后的信号，忽略噪声项，如公式(\ref{equa:y_prime})所示：
+当物体位移为$1cm$时，带入$f_c = 7.29GHz$，可以得到$\Delta \theta_{p}(\text{ant},\text{bin}) = 3.07$，这对于相位来说是一个极大的改变。考虑多个路径信号叠加后的信号，忽略噪声项，如公式(\ref{equa:y_prime})所示：
 \begin{equation}
     \label{equa:y_prime}
     \begin{aligned}
@@ -687,13 +687,13 @@
     \centering
     \begin{subfigure}[b]{0.45\textwidth}
         \includegraphics[width=\textwidth]{Figures/ablation/D-MAE.pdf}
-        \caption{D-MAE对比(越小越好)}
+        \caption{D-MAE对比($\downarrow$)}
         \label{fig:ablation-a}
     \end{subfigure}
     \hfill
     \begin{subfigure}[b]{0.45\textwidth}
         \includegraphics[width=\textwidth]{Figures/ablation/CD.pdf}
-        \caption{CD对比(越小越好)}
+        \caption{CD对比($\downarrow$)}
         \label{fig:ablation-b}
     \end{subfigure}
     
@@ -701,13 +701,13 @@
     
     \begin{subfigure}[b]{0.45\textwidth}
         \includegraphics[width=\textwidth]{Figures/ablation/F-Score(τ).pdf}
-        \caption{F-Score($\tau$)对比(越大越好)}
+        \caption{F-Score($\tau$)对比($\uparrow$)}
         \label{fig:ablation-c}
     \end{subfigure}
     \hfill
     \begin{subfigure}[b]{0.45\textwidth}
         \includegraphics[width=\textwidth]{Figures/ablation/F-Score(2τ).pdf}
-        \caption{F-Score($2\tau$)对比(越大越好)}
+        \caption{F-Score($2\tau$)对比($\uparrow$)}
         \label{fig:ablation-d}
     \end{subfigure}
     
